@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: smartpc-backend
+  profiles:
+    active: dev
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+smartpc:
+  jwt:
+    secret: ${JWT_SECRET:9a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b}
+    expiration-ms: 86400000 # 1 day
+    refresh-expiration-ms: 604800000 # 7 days
+  rule-engine:
+    caffeine:
+      expire-after-write-minutes: 60
+      maximum-size: 500
+  ai:
+    gemini:
+      model: gemini-1.5-flash
+      timeout-seconds: 5

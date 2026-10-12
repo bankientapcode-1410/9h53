@@ -982,73 +982,73 @@ flowchart TD
 
 #### Màn hình 0: Đăng nhập / Đăng ký (Login / Register)
 
-![Đăng nhập / Đăng ký](screen0.png)
+![Đăng nhập / Đăng ký](docs/screens/screen0.png)
 
 ---
 
 #### Màn hình 1: Trang chủ (Home)
 
-![Trang chủ](screen1.png)
+![Trang chủ](docs/screens/screen1.png)
 
 ---
 
 #### Màn hình 2: Tìm kiếm thông minh (AI Search)
 
-![Kết quả tìm kiếm AI](screen2a.png)
+![Kết quả tìm kiếm AI](docs/screens/screen2a.png)
 
 **Trạng thái Loading (khi AI đang xử lý, ~2-5 giây):**
 
-![Trạng thái Loading AI](screen2b.png)
+![Trạng thái Loading AI](docs/screens/screen2b.png)
 
 **Trạng thái Fallback (khi AI không khả dụng):**
 
-![Trạng thái Fallback](screen2c.png)
+![Trạng thái Fallback](docs/screens/screen2c.png)
 
 ---
 
 #### Màn hình 3: Chi tiết sản phẩm (Product Detail)
 
-![Chi tiết sản phẩm](screen3.png)
+![Chi tiết sản phẩm](docs/screens/screen3.png)
 
 ---
 
 #### Màn hình 4: PC Builder & Compatibility Checker
 
-![PC Builder](screen4.png)
+![PC Builder](docs/screens/screen4.png)
 
 ---
 
 #### Màn hình 5: Giỏ hàng (Cart)
 
-![Giỏ hàng](screen5a.png)
+![Giỏ hàng](docs/screens/screen5a.png)
 
 ---
 
 #### Màn hình 6: Thanh toán (Checkout — One-Page)
 
-![Thanh toán](screen5b.png)
+![Thanh toán](docs/screens/screen5b.png)
 
 ---
 
 #### Màn hình 7: Xác nhận đơn hàng (Order Confirmation)
 
-![Xác nhận đơn hàng](screen5c.png)
+![Xác nhận đơn hàng](docs/screens/screen5c.png)
 
 ---
 
 #### Màn hình 8: PC Profile & Đề xuất nâng cấp (Upgrade Suggestion)
 
-![PC Profile & Nâng cấp](screen6.png)
+![PC Profile & Nâng cấp](docs/screens/screen6.png)
 
 ### 5.3. Prompt tạo hình ảnh giao diện qua Google Stitch
 
-> *Hướng dẫn sử dụng: Truy cập [Google Stitch](https://stitch.withgoogle.com), tạo project mới, paste từng prompt bên dưới vào thanh nhập lệnh. Stitch sẽ sinh ra giao diện UI high-fidelity tương ứng. Có thể đính kèm ảnh mockup hiện tại (`screen0.png` — `screen6.png`) làm reference image để Stitch giữ nguyên bố cục cấu trúc khi cải tiến đồ họa.*
+> *Hướng dẫn sử dụng: Truy cập [Google Stitch](https://stitch.withgoogle.com), tạo project mới, paste từng prompt bên dưới vào thanh nhập lệnh. Stitch sẽ sinh ra giao diện UI high-fidelity tương ứng. Có thể đính kèm ảnh mockup hiện tại (`docs/screens/screen0.png` — `docs/screens/screen6.png`) làm reference image để Stitch giữ nguyên bố cục cấu trúc khi cải tiến đồ họa.*
 >
 > *Quy chuẩn chung cho tất cả prompt: Nền tảng TMĐT linh kiện PC Việt Nam tên "SmartPC". Bảng màu: Navy đậm (#1A2332), Xanh dương (#1A44D8), Cyan/Teal (#00BCD4), Trắng (#FFFFFF), Xám viền (#E5E7EB), Đỏ CTA (#E30019). Font: Inter hoặc Be Vietnam Pro. Ngôn ngữ hiển thị: Tiếng Việt. Desktop web resolution (1440px width). KHÔNG vẽ khung thiết bị (laptop/phone), chỉ vẽ giao diện web thuần.*
 
 ---
 
-#### Prompt 0 — Màn hình Đăng nhập / Đăng ký (`screen0.png`)
+#### Prompt 0 — Màn hình Đăng nhập / Đăng ký (`docs/screens/screen0.png`)
 ```text
 Design a professional e-commerce login page for a Vietnamese PC hardware store called "SmartPC".
 
@@ -1079,7 +1079,7 @@ HEADER: Navy bar with logo "SmartPC", nav items: Trang chủ, Sản phẩm, Danh
 FOOTER: 4-column footer.
 ```
 
-#### Prompt 1 — Màn hình Trang chủ (`screen1.png`)
+#### Prompt 1 — Màn hình Trang chủ (`docs/screens/screen1.png`)
 ```text
 Design a comprehensive Vietnamese e-commerce homepage for a PC hardware store called "SmartPC". Aspect ratio: 9:16 (tall).
 
@@ -1108,7 +1108,7 @@ AI ASSISTANT HUB SECTION (dark navy background):
 FOOTER: Dark footer with 4 columns.
 ```
 
-#### Prompt 2 — Nhóm Màn hình Tìm kiếm AI (`screen2a.png`, `screen2b.png`, `screen2c.png`)
+#### Prompt 2 — Nhóm Màn hình Tìm kiếm AI (`docs/screens/screen2a.png`, `docs/screens/screen2b.png`, `docs/screens/screen2c.png`)
 ```text
 Design an AI-powered search results page for a Vietnamese PC hardware store "SmartPC". User searched: "Card đồ họa chơi game tầm 8 triệu".
 
@@ -1131,7 +1131,7 @@ PRODUCT RESULTS (vertical list cards):
 - Card 3: VRAM LARGE (88% match). MSI RTX 3060 12GB.
 ```
 
-#### Prompt 3 — Màn hình Chi tiết sản phẩm (`screen3.png`)
+#### Prompt 3 — Màn hình Chi tiết sản phẩm (`docs/screens/screen3.png`)
 ```text
 Design a product detail page for an NVIDIA GeForce RTX 4060 8GB GPU on "SmartPC". Layout: 2.5 columns.
 
@@ -1158,7 +1158,7 @@ BELOW FOLD:
 - Right: AI Hardware Rating box with benchmark FPS scores (Cyberpunk 2077, CS2).
 ```
 
-#### Prompt 4 — Màn hình PC Builder (`screen4.png`)
+#### Prompt 4 — Màn hình PC Builder (`docs/screens/screen4.png`)
 ```text
 Design a PC Builder & Compatibility Checker tool page for "SmartPC".
 
@@ -1185,7 +1185,7 @@ RIGHT SIDEBAR (35%) — "Chẩn Đoán Hardware Rule Engine":
 STICKY BOTTOM BAR: Progress (5/8 linh kiện), Total Price, "Thêm tất cả vào giỏ hàng" button.
 ```
 
-#### Prompt 5 — Nhóm Màn hình Giỏ hàng & Thanh toán (`screen5a.png`, `screen5b.png`, `screen5c.png`)
+#### Prompt 5 — Nhóm Màn hình Giỏ hàng & Thanh toán (`docs/screens/screen5a.png`, `docs/screens/screen5b.png`, `docs/screens/screen5c.png`)
 ```text
 Design a shopping cart and one-page checkout flow for "SmartPC".
 
@@ -1207,7 +1207,7 @@ ORDER CONFIRMATION:
 - Banner suggesting to add these items to the user's "PC Profile".
 ```
 
-#### Prompt 6 — Màn hình PC Profile & Nâng cấp (`screen6.png`)
+#### Prompt 6 — Màn hình PC Profile & Nâng cấp (`docs/screens/screen6.png`)
 ```text
 Design a PC Profile and AI-powered upgrade suggestion page for "SmartPC".
 

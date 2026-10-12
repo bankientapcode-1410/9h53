@@ -2,11 +2,11 @@
 
 Dưới đây là các câu lệnh (prompts) hoàn chỉnh được thiết kế theo đúng nhận diện thương hiệu **SmartPC** (Bảng màu: Navy đậm `#1A2332`, Xanh dương `#1A44D8`, Xanh ngọc `#00BCD4`, Nền sáng `#FFFFFF`/`#F8F9FA`, Đỏ CTA `#E30019`).
 
-Các prompt này tương ứng chính xác với các màn hình mẫu (`screen0.png` — `screen6.png`) trong tài liệu thiết kế đặc tả `prj1.md`.
+Các prompt này tương ứng chính xác với các màn hình mẫu (`docs/screens/screen0.png` — `docs/screens/screen6.png`) trong tài liệu thiết kế đặc tả `prj1.md`.
 
 ---
 
-## 1. Màn hình Đăng nhập / Đăng ký (Screen 0 - `screen0.png`)
+## 1. Màn hình Đăng nhập / Đăng ký (Screen 0 - `docs/screens/screen0.png`)
 **Prompt:**
 ```text
 Design a professional e-commerce login page for a Vietnamese PC hardware store called "SmartPC".
@@ -40,7 +40,7 @@ FOOTER: 4-column footer.
 
 ---
 
-## 2. Màn hình Trang Chủ (Screen 1 - `screen1.png`)
+## 2. Màn hình Trang Chủ (Screen 1 - `docs/screens/screen1.png`)
 **Prompt:**
 ```text
 Design a comprehensive Vietnamese e-commerce homepage for a PC hardware store called "SmartPC". Aspect ratio: 9:16 (tall).
@@ -72,7 +72,7 @@ FOOTER: Dark footer (#1A2332) with 4 columns.
 
 ---
 
-## 3. Nhóm Màn hình Tìm kiếm AI (Screen 2a, 2b, 2c - `screen2a.png`, `screen2b.png`, `screen2c.png`)
+## 3. Nhóm Màn hình Tìm kiếm AI (Screen 2a, 2b, 2c - `docs/screens/screen2a.png`, `docs/screens/screen2b.png`, `docs/screens/screen2c.png`)
 **Prompt:**
 ```text
 Design an AI-powered search results page for a Vietnamese PC hardware store "SmartPC". User searched: "Card đồ họa chơi game tầm 8 triệu".
@@ -98,7 +98,7 @@ PRODUCT RESULTS (vertical list cards on light background):
 
 ---
 
-## 4. Màn hình Chi tiết Sản phẩm (Screen 3 - `screen3.png`)
+## 4. Màn hình Chi tiết Sản phẩm (Screen 3 - `docs/screens/screen3.png`)
 **Prompt:**
 ```text
 Design a product detail page for an NVIDIA GeForce RTX 4060 8GB GPU on "SmartPC". Layout: 2.5 columns on light background.
@@ -128,7 +128,7 @@ BELOW FOLD:
 
 ---
 
-## 5. Màn hình PC Builder & Kiểm tra tương thích (Screen 4 - `screen4.png`)
+## 5. Màn hình PC Builder & Kiểm tra tương thích (Screen 4 - `docs/screens/screen4.png`)
 **Prompt:**
 ```text
 Design a PC Builder & Compatibility Checker tool page for "SmartPC".
@@ -158,22 +158,22 @@ STICKY BOTTOM BAR: Progress (5/8 linh kiện), Total Price, "Thêm tất cả v�
 
 ---
 
-## 6. Nhóm Màn hình Giỏ hàng & Thanh toán (Screen 5a, 5b, 5c - `screen5a.png`, `screen5b.png`, `screen5c.png`)
+## 6. Nhóm Màn hình Giỏ hàng & Thanh toán (Screen 5a, 5b, 5c - `docs/screens/screen5a.png`, `docs/screens/screen5b.png`, `docs/screens/screen5c.png`)
 **Prompt:**
 ```text
 Design a shopping cart and one-page checkout flow for "SmartPC".
 
-CART PAGE (screen5a.png):
+CART PAGE (docs/screens/screen5a.png):
 - Step indicator: ① Giỏ hàng & Rule Engine (active) ——→ ② Thanh toán ——→ ③ Hoàn tất
 - Yellow Warning Banner at top: "CẢNH BÁO XUNG ĐỘT TƯƠNG THÍCH PHẦN CỨNG" regarding RAM bus speed.
 - Left column (65%): List of 3 items (GPU, CPU, RAM) with thumbnail, specs tags, price, and quantity selector. Cross-sell section below "Mua kèm giảm sốc".
 - Right column (35%): Sticky Order Summary. Subtotal, Shipping, Coupon input, Total "18.990.000đ". Blue button "Tiến hành thanh toán →".
 
-CHECKOUT PAGE (One-page - screen5b.png):
+CHECKOUT PAGE (One-page - docs/screens/screen5b.png):
 - Left column (60%): Delivery Info form (Name, Phone, Address). Payment Methods radio buttons (COD, VietQR, Ví điện tử, Trả góp 0%). Rule Engine confirmation badge "PASSED - AN TOÀN" (green).
 - Right column (40%): Sticky sidebar with order summary (3 mini-cards for products), total price, and large RED CTA button "ĐẶT HÀNG NGAY" (#E30019).
 
-ORDER CONFIRMATION (screen5c.png):
+ORDER CONFIRMATION (docs/screens/screen5c.png):
 - Success hero section (green #34A853) with checkmark: "ĐẶT HÀNG THÀNH CÔNG!".
 - Order info bar (Order ID #ORD-xxx, Date, Total, COD, Status PENDING).
 - Left: List of 3 components ordered.
@@ -183,7 +183,7 @@ ORDER CONFIRMATION (screen5c.png):
 
 ---
 
-## 7. Màn hình PC Profile & Đề xuất nâng cấp (Screen 6 - `screen6.png`)
+## 7. Màn hình PC Profile & Đề xuất nâng cấp (Screen 6 - `docs/screens/screen6.png`)
 **Prompt:**
 ```text
 Design a PC Profile and AI-powered upgrade suggestion page for "SmartPC".
