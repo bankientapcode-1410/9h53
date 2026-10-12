@@ -12,16 +12,16 @@ Tài liệu này đặc tả toàn diện kiến trúc repository, cấu trúc m
 * **Lý do & Lợi ích:**
   1. **Đồng bộ hóa phiên bản:** Thay đổi DTO backend và Type interface frontend diễn ra trong cùng một commit/PR, triệt tiêu nguy cơ "vỡ hợp đồng API" (API Contract drift).
   2. **Tối ưu hóa quy trình làm việc cho nhóm 2 người:** Không phải quản lý nhiều repo, issue tracker rời rạc; dễ dàng review chéo (Dev 1 review logic của Dev 2 và ngược lại).
-  3. **Môi trường cục bộ đồng nhất:** 1 câu lệnh `docker compose up -d` là khởi chạy được toàn bộ hệ sinh thái (Database + pgvector + Redis + Mailhog + Backend + Frontend).
+  3. **Môi trường cục bộ đồng nhất:** 1 câu lệnh `docker compose up -d` là khởi chạy được toàn bộ hệ sinh thái (Database MySQL + Redis + Mailhog + Backend + Frontend).
   4. **Tích hợp CI/CD tinh gọn:** Sử dụng GitHub Actions path-filtering (`paths: ['backend/**']` và `paths: ['frontend/**']`) giúp chạy test độc lập nhưng quản lý pipeline tập trung.
 
-### ADR-02: Tích hợp Vector Database trực tiếp vào PostgreSQL qua `pgvector`
-* **Bối cảnh:** Hệ thống cần Vector Database để thực hiện Semantic Search cho linh kiện máy tính, trong khi cũng cần RDBMS để xử lý ACID transaction cho Đơn hàng, Giỏ hàng và Quản lý Người dùng.
-* **Quyết định:** Sử dụng PostgreSQL 16 với extension `pgvector` thay vì dựng thêm cụm Milvus hoặc Elasticsearch độc lập.
+### ADR-02: Lựa chọn MySQL 8.0 làm Cơ sở Dữ liệu Quan hệ Chính
+* **Bối cảnh:** Hệ thống cần hệ quản trị RDBMS phổ biến, ổn định để xử lý ACID transaction cho Đơn hàng, Giỏ hàng, Quản lý Người dùng, Tập luật tương thích và Lưu trữ thông số sản phẩm dưới dạng JSON.
+* **Quyết định:** Sử dụng MySQL 8.0 với InnoDB engine và trường kiểu `JSON` cho specs phần cứng, vector embeddings.
 * **Lý do & Lợi ích:**
-  1. **Đơn giản hóa hạ tầng:** Nhóm 2 người không phải bảo trì thêm một server/cluster riêng biệt (như Elasticsearch/Milvus vốn tốn nhiều RAM và phức tạp cấu hình).
-  2. **Hiệu suất & Đồng bộ tuyệt đối:** Bảng `product_embeddings` liên kết khóa ngoại trực tiếp `REFERENCES products(product_id) ON DELETE CASCADE`. Việc cập nhật linh kiện và cập nhật vector diễn ra nhất quán trong cùng 1 kết nối cơ sở dữ liệu.
-  3. **Truy vấn lai (Hybrid Query):** Dễ dàng kết hợp lọc thông thường (`WHERE category_id = ... AND price <= ...`) với toán tử tìm kiếm tương đồng vector (`ORDER BY embedding_vector <=> query_vector LIMIT 5`) chỉ bằng 1 câu lệnh SQL duy nhất.
+  1. **Đơn giản hóa & Phổ biến:** MySQL 8.0 thân thiện, tài liệu phong phú, hỗ trợ native kiểu dữ liệu JSON, UUID expressions và transaction cách ly cao.
+  2. **Hiệu suất & Đồng bộ:** Bảng `product_embeddings` liên kết khóa ngoại trực tiếp `REFERENCES products(product_id) ON DELETE CASCADE`.
+  3. **Hỗ trợ JSON Native:** MySQL 8 cung cấp hàm JSON phong phú (`JSON_EXTRACT`, `->`, `->>`) phù hợp cho các trường specs phần cứng linh hoạt.
 
 ### ADR-03: Hardware Rule Engine nội bộ với Caffeine Cache & CompletableFuture
 * **Bối cảnh:** Luồng PC Builder và Checkout yêu cầu kiểm tra tương thích liên tục khi người dùng thao tác. Độ trễ yêu cầu `< 2ms` và không được nghẽn CPU khi có nhiều luật.
@@ -56,7 +56,7 @@ project1/
 │   │   │   │   │   ├── CorsConfig.java
 │   │   │   │   │   ├── CacheConfig.java   # Cấu hình Caffeine Cache
 │   │   │   │   │   ├── AsyncConfig.java   # Thread pool cho Rule Engine & Async Tasks
-│   │   │   │   │   └── SpringAiConfig.java # Vertex AI Gemini & pgvector VectorStore bean
+│   │   │   │   │   └── SpringAiConfig.java # Vertex AI Gemini & Vector Search bean
 │   │   │   │   ├── security/              # Tầng bảo mật & phân quyền
 │   │   │   │   │   ├── JwtTokenProvider.java
 │   │   │   │   │   ├── JwtAuthenticationFilter.java
@@ -149,7 +149,7 @@ project1/
 │   └── Dockerfile
 ├── docker/
 │   ├── docker-compose.yml
-│   └── postgres/
+│   └── mysql/
 │       └── init.sql
 ├── scripts/
 │   └── seed-compat-rules.sql
@@ -185,11 +185,11 @@ project1/
 ### 3.2. Module `ai` (Gemini LLM & Semantic Search)
 - **Luồng xử lý 2 pha (Two-Phase Execution):**
   - **Pha 1: Intent Parsing:** Gửi câu truy vấn ngôn ngữ tự nhiên của người dùng vào Gemini với system prompt bắt buộc trả về định dạng JSON (Schema: `{ category, budget, keywords, brand_preference }`).
-  - **Pha 2: Hybrid Retrieval:** Dùng embedding vector từ Spring AI query vào bảng `product_embeddings` trong PostgreSQL kết hợp với bộ lọc thuộc tính vừa trích xuất được.
+  - **Pha 2: Hybrid Retrieval:** Dùng embedding vector từ Spring AI query vào bảng `product_embeddings` trong MySQL kết hợp với bộ lọc thuộc tính vừa trích xuất được.
   - **Pha 3: AI Reasoning:** Gửi Top 5 sản phẩm thu được kèm ngữ cảnh người dùng lại cho Gemini để sinh ra đoạn phân tích tư vấn khách quan.
 - **Cơ chế Fallback an toàn:**
   - Thiết lập timeout 5 giây cho API Gemini.
-  - Nếu xảy ra timeout hoặc hết hạn ngạch (quota limit), hệ thống tự động bắt ngoại lệ và kích hoạt chuyển sang tìm kiếm từ khóa SQL Fuzzy Search (`ILIKE` / PostgreSQL Full-Text Search).
+  - Nếu xảy ra timeout hoặc hết hạn ngạch (quota limit), hệ thống tự động bắt ngoại lệ và kích hoạt chuyển sang tìm kiếm từ khóa SQL Fuzzy Search (`LIKE` / MySQL Full-Text Search).
 
 ### 3.3. Module `order` (ACID Checkout & Stock Management)
 - Triển khai `@Transactional(isolation = Isolation.REPEATABLE_READ)`:

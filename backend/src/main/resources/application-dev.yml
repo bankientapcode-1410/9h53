@@ -1,9 +1,9 @@
 spring:
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:smartpc_db}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:smartpc_db}?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${DB_USER:smartpc_user}
     password: ${DB_PASSWORD:smartpc_password}
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
@@ -14,7 +14,7 @@ spring:
     properties:
       hibernate:
         format_sql: false
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQLDialect
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -32,11 +32,6 @@ spring:
         gemini:
           project-id: ${GCP_PROJECT_ID:smartpc-dev}
           location: us-central1
-    vectorstore:
-      pgvector:
-        index-type: HNSW
-        distance-type: COSINE
-        dimensions: 1536
 
 logging:
   level:

@@ -3,7 +3,7 @@
 -- ====================================================================
 
 -- 1. Base Categories
-INSERT INTO categories (category_id, category_code, category_name, description, parent_category_id)
+INSERT IGNORE INTO categories (category_id, category_code, category_name, description, parent_category_id)
 VALUES 
     ('c0000001-0000-0000-0000-000000000001', 'CPU', 'Bộ vi xử lý (CPU)', 'Vi xử lý trung tâm Intel, AMD', NULL),
     ('c0000001-0000-0000-0000-000000000002', 'MOTHERBOARD', 'Bo mạch chủ (Mainboard)', 'Bo mạch chủ ASUS, MSI, Gigabyte, ASRock', NULL),
@@ -12,11 +12,10 @@ VALUES
     ('c0000001-0000-0000-0000-000000000005', 'SSD_M2', 'Ổ cứng SSD M.2 NVMe', 'Ổ cứng tốc độ cao M.2 PCIe Gen 3, Gen 4, Gen 5', NULL),
     ('c0000001-0000-0000-0000-000000000006', 'PSU', 'Nguồn máy tính (PSU)', 'Nguồn công suất thực Corsair, Cooler Master, Seasonic', NULL),
     ('c0000001-0000-0000-0000-000000000007', 'CASE', 'Vỏ máy tính (Case)', 'Vỏ case ATX, Micro-ATX, Mini-ITX', NULL),
-    ('c0000001-0000-0000-0000-000000000008', 'CPU_COOLER', 'Tản nhiệt CPU', 'Tản nhiệt khí, tản nhiệt nước AIO', NULL)
-ON CONFLICT (category_code) DO NOTHING;
+    ('c0000001-0000-0000-0000-000000000008', 'CPU_COOLER', 'Tản nhiệt CPU', 'Tản nhiệt khí, tản nhiệt nước AIO', NULL);
 
 -- 2. Hardware Compatibility Rules (Compat_Rule)
-INSERT INTO compat_rules (
+INSERT IGNORE INTO compat_rules (
     rule_id, rule_name, source_category, target_category, 
     source_spec_key, operator, target_spec_key, 
     severity, error_message_template, is_active, priority, created_at
@@ -161,5 +160,4 @@ VALUES
     true,
     10,
     NOW()
-)
-ON CONFLICT (rule_id) DO NOTHING;
+);

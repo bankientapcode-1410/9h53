@@ -1,150 +1,145 @@
 -- =========================================================
--- SmartPC Initial Database Migration Schema (V1)
+-- SmartPC Initial Database Migration Schema (V1) - MySQL 8.0
 -- Matches ERD in prj1.md Section 3
 -- =========================================================
 
--- Ensure required PostgreSQL extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS vector;
-
--- 1. Enum Types
-CREATE TYPE user_role AS ENUM ('USER', 'ADMIN');
-CREATE TYPE sync_status_enum AS ENUM ('SYNCED', 'PENDING', 'FAILED');
-CREATE TYPE payment_method_enum AS ENUM ('COD', 'TRANSFER', 'EWALLET', 'INSTALLMENT');
-CREATE TYPE payment_status_enum AS ENUM ('UNPAID', 'PAID', 'REFUNDED');
-CREATE TYPE order_status_enum AS ENUM ('PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED');
-CREATE TYPE rule_operator_enum AS ENUM ('EQUALS', 'IN', 'NOT_IN', 'LTE', 'GTE', 'RANGE');
-CREATE TYPE rule_severity_enum AS ENUM ('ERROR', 'WARNING', 'INFO');
-
--- 2. Users Table
+-- 1. Users Table
 CREATE TABLE users (
-    user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
     address TEXT,
-    role user_role NOT NULL DEFAULT 'USER',
+    role ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER',
     is_active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. Categories Table
+-- 2. Categories Table
 CREATE TABLE categories (
-    category_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    category_id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     category_code VARCHAR(50) UNIQUE NOT NULL,
     category_name VARCHAR(255) NOT NULL,
     description TEXT,
-    parent_category_id UUID REFERENCES categories(category_id) ON DELETE SET NULL
-);
+    parent_category_id VARCHAR(36),
+    CONSTRAINT fk_categories_parent FOREIGN KEY (parent_category_id) REFERENCES categories(category_id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. Products Table
+-- 3. Products Table
 CREATE TABLE products (
-    product_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    product_id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     name VARCHAR(255) NOT NULL,
     brand VARCHAR(100) NOT NULL,
     description TEXT,
-    specs JSONB NOT NULL DEFAULT '{}',
+    specs JSON NOT NULL,
     image_url TEXT,
     price INT NOT NULL DEFAULT 0,
     stock_quantity INT NOT NULL DEFAULT 0,
-    benchmark_score FLOAT DEFAULT 0,
-    sync_status sync_status_enum DEFAULT 'PENDING',
+    benchmark_score DOUBLE DEFAULT 0,
+    sync_status ENUM('SYNCED', 'PENDING', 'FAILED') DEFAULT 'PENDING',
     is_active BOOLEAN NOT NULL DEFAULT true,
-    category_id UUID NOT NULL REFERENCES categories(category_id) ON DELETE RESTRICT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+    category_id VARCHAR(36) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Index on JSONB specs and category for high-speed queries
 CREATE INDEX idx_products_category ON products(category_id);
-CREATE INDEX idx_products_specs ON products USING gin(specs);
 
--- 5. Product Embeddings Table (Vector DB in PostgreSQL)
+-- 4. Product Embeddings Table (Vector Embeddings Store)
 CREATE TABLE product_embeddings (
-    product_id UUID PRIMARY KEY REFERENCES products(product_id) ON DELETE CASCADE,
-    embedding_vector vector(1536) NOT NULL
-);
+    product_id VARCHAR(36) PRIMARY KEY,
+    embedding_vector JSON NOT NULL,
+    CONSTRAINT fk_product_embeddings_product FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- HNSW Vector Index for Cosine Similarity search
-CREATE INDEX idx_product_embeddings_vector ON product_embeddings 
-USING hnsw (embedding_vector vector_cosine_ops);
-
--- 6. Carts Table
+-- 5. Carts Table
 CREATE TABLE carts (
-    cart_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID UNIQUE NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+    cart_id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    user_id VARCHAR(36) UNIQUE NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_carts_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. Cart Items Table
+-- 6. Cart Items Table
 CREATE TABLE cart_items (
-    cart_item_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    cart_id UUID NOT NULL REFERENCES carts(cart_id) ON DELETE CASCADE,
-    product_id UUID NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
+    cart_item_id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    cart_id VARCHAR(36) NOT NULL,
+    product_id VARCHAR(36) NOT NULL,
     quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
-    CONSTRAINT uq_cart_product UNIQUE(cart_id, product_id)
-);
+    CONSTRAINT uq_cart_product UNIQUE(cart_id, product_id),
+    CONSTRAINT fk_cart_items_cart FOREIGN KEY (cart_id) REFERENCES carts(cart_id) ON DELETE CASCADE,
+    CONSTRAINT fk_cart_items_product FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. Orders Table
+-- 7. Orders Table
 CREATE TABLE orders (
-    order_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
+    order_id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    user_id VARCHAR(36) NOT NULL,
     shipping_address TEXT NOT NULL,
     phone VARCHAR(20) NOT NULL,
-    payment_method payment_method_enum NOT NULL DEFAULT 'COD',
-    payment_status payment_status_enum NOT NULL DEFAULT 'UNPAID',
-    status order_status_enum NOT NULL DEFAULT 'PENDING',
+    payment_method ENUM('COD', 'TRANSFER', 'EWALLET', 'INSTALLMENT') NOT NULL DEFAULT 'COD',
+    payment_status ENUM('UNPAID', 'PAID', 'REFUNDED') NOT NULL DEFAULT 'UNPAID',
+    status ENUM('PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
     total_amount INT NOT NULL DEFAULT 0,
     discount_amount INT NOT NULL DEFAULT 0,
     voucher_code VARCHAR(50),
     note TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_orders_user ON orders(user_id);
 CREATE INDEX idx_orders_status ON orders(status);
 
--- 9. Order Details Table
+-- 8. Order Details Table
 CREATE TABLE order_details (
-    order_detail_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    order_id UUID NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
-    product_id UUID NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
+    order_detail_id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    order_id VARCHAR(36) NOT NULL,
+    product_id VARCHAR(36) NOT NULL,
     quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
-    unit_price INT NOT NULL DEFAULT 0
-);
+    unit_price INT NOT NULL DEFAULT 0,
+    CONSTRAINT fk_order_details_order FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
+    CONSTRAINT fk_order_details_product FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 10. PC Profiles Table
+-- 9. PC Profiles Table
 CREATE TABLE pc_profiles (
-    profile_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    profile_id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    user_id VARCHAR(36) NOT NULL,
     profile_name VARCHAR(255) NOT NULL,
     description TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_pc_profiles_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 11. Profile Components Table
+-- 10. Profile Components Table
 CREATE TABLE profile_components (
-    component_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    profile_id UUID NOT NULL REFERENCES pc_profiles(profile_id) ON DELETE CASCADE,
-    product_id UUID NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
-    quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0)
-);
+    component_id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    profile_id VARCHAR(36) NOT NULL,
+    product_id VARCHAR(36) NOT NULL,
+    quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    CONSTRAINT fk_profile_components_profile FOREIGN KEY (profile_id) REFERENCES pc_profiles(profile_id) ON DELETE CASCADE,
+    CONSTRAINT fk_profile_components_product FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 12. Hardware Compatibility Rules Table
+-- 11. Hardware Compatibility Rules Table
 CREATE TABLE compat_rules (
-    rule_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    rule_id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     rule_name VARCHAR(255) NOT NULL,
-    source_category VARCHAR(50) NOT NULL REFERENCES categories(category_code) ON DELETE CASCADE,
-    target_category VARCHAR(50) NOT NULL REFERENCES categories(category_code) ON DELETE CASCADE,
+    source_category VARCHAR(50) NOT NULL,
+    target_category VARCHAR(50) NOT NULL,
     source_spec_key VARCHAR(100) NOT NULL,
     target_spec_key VARCHAR(100) NOT NULL,
-    operator rule_operator_enum NOT NULL,
-    severity rule_severity_enum NOT NULL,
+    operator ENUM('EQUALS', 'IN', 'NOT_IN', 'LTE', 'GTE', 'RANGE') NOT NULL,
+    severity ENUM('ERROR', 'WARNING', 'INFO') NOT NULL,
     error_message_template TEXT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true,
     priority INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_compat_rules_source FOREIGN KEY (source_category) REFERENCES categories(category_code) ON DELETE CASCADE,
+    CONSTRAINT fk_compat_rules_target FOREIGN KEY (target_category) REFERENCES categories(category_code) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_compat_rules_pair ON compat_rules(source_category, target_category, is_active);

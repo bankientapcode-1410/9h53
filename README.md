@@ -3,7 +3,7 @@
 [![Spring Boot 3.5](https://img.shields.io/badge/Spring_Boot-3.5.x-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
 [![Java 21](https://img.shields.io/badge/Java-21_LTS-orange.svg?logo=openjdk)](https://openjdk.org/)
 [![React 18](https://img.shields.io/badge/React-18-blue.svg?logo=react)](https://react.dev/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16_+_pgvector-336791.svg?logo=postgresql)](https://www.postgresql.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1.svg?logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED.svg?logo=docker)](https://www.docker.com/)
 
 SmartPC là giải pháp thương mại điện tử chuyên sâu cho lĩnh vực phần cứng công nghệ và máy tính lắp ráp (Custom PC), tích hợp:
@@ -35,13 +35,13 @@ flowchart TD
 
         subgraph AIModule ["AI & Search Module"]
             GeminiClient["Gemini LLM (Intent Parsing & Advisor)"]
-            VectorSearch["Similarity Search (pgvector)"]
+            VectorSearch["Similarity Search"]
         end
 
         OrderModule["Cart & Checkout (ACID Transactions)"]
     end
 
-    CoreBackend --> PostgreSQL[("PostgreSQL 16 + pgvector\n(Dữ liệu quan hệ + Vector Store)")]
+    CoreBackend --> MySQL[("MySQL 8.0\n(Dữ liệu quan hệ)")]
     CoreBackend --> Redis[("Redis 7 Cache\n(Session, Hot Products)")]
     CoreBackend --> Mailhog["Mailhog (SMTP Email Testing)"]
 ```
@@ -92,8 +92,8 @@ flowchart TD
 │   ├── nginx.conf                   # Reverse proxy routing /api -> Backend
 │   └── Dockerfile                   # Multi-stage Nginx Container Build
 ├── docker/
-│   └── postgres/
-│       └── init.sql                 # Khởi tạo extension uuid-ossp & vector
+│   └── mysql/
+│       └── init.sql                 # Khởi tạo database smartpc_db
 ├── docs/
 │   ├── screens/                     # Toàn bộ ảnh mockup giao diện (screen0.png -> screen6.png)
 │   └── REPO_DESIGN.md               # Bản thiết kế chi tiết kiến trúc repository
@@ -117,7 +117,7 @@ Yêu cầu: Đã cài đặt [Docker Desktop](https://www.docker.com/products/do
 git clone <repo_url>
 cd project1
 
-# 2. Khởi chạy toàn bộ hệ thống (PostgreSQL, Redis, Mailhog, Backend, Frontend)
+# 2. Khởi chạy toàn bộ hệ thống (MySQL, Redis, Mailhog, Backend, Frontend)
 docker compose up -d
 
 # 3. Truy cập các dịch vụ:
@@ -131,7 +131,7 @@ docker compose up -d
 
 #### Bước 1: Chạy Database & Redis qua Docker
 ```bash
-docker compose up -d postgres redis mailhog
+docker compose up -d mysql redis mailhog
 ```
 
 #### Bước 2: Chạy Backend (Spring Boot)
@@ -177,7 +177,7 @@ Dự án cài đặt sẵn **10 quy tắc cốt lõi** trong `scripts/seed-compa
 - **Developer 1 (Backend & AI Lead):**
   - Quản lý Database, JPA Entities, Flyway migrations.
   - Xây dựng Core Rule Engine (`RuleEvaluator`, `AggregateCalculator`, Caffeine cache).
-  - Tích hợp Spring AI (Gemini LLM Intent Parsing & pgvector Similarity Search).
+  - Tích hợp Spring AI (Gemini LLM Intent Parsing & Similarity Search).
   - Xử lý ACID Checkout transaction, Stock lock & Email notification.
 - **Developer 2 (Frontend & Full-stack Support):**
   - Xây dựng giao diện React 18 theo mockup `screen0.png` → `screen6.png`.

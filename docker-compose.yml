@@ -2,23 +2,24 @@ version: '3.8'
 
 services:
   # ========================================================
-  # Database & Vector Engine (PostgreSQL 16 + pgvector)
+  # Database Engine (MySQL 8.0)
   # ========================================================
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: smartpc-postgres
+  mysql:
+    image: mysql:8.0
+    container_name: smartpc-mysql
     restart: always
     environment:
-      POSTGRES_DB: smartpc_db
-      POSTGRES_USER: smartpc_user
-      POSTGRES_PASSWORD: smartpc_password
+      MYSQL_DATABASE: smartpc_db
+      MYSQL_USER: smartpc_user
+      MYSQL_PASSWORD: smartpc_password
+      MYSQL_ROOT_PASSWORD: smartpc_root_password
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartpc_user -d smartpc_db"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "smartpc_user", "-psmartpc_password"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -52,7 +53,7 @@ services:
     restart: always
 
   # ========================================================
-  # Core Backend (Spring Boot 3 + Java 21)
+  # Core Backend (Spring Boot 3.5 + Java 21)
   # ========================================================
   backend:
     build:
@@ -61,7 +62,7 @@ services:
     container_name: smartpc-backend
     restart: unless-stopped
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -69,8 +70,8 @@ services:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: mysql
+      DB_PORT: 3306
       DB_NAME: smartpc_db
       DB_USER: smartpc_user
       DB_PASSWORD: smartpc_password
@@ -96,5 +97,5 @@ services:
       - "3000:80"
 
 volumes:
-  postgres-data:
+  mysql-data:
   redis-data:

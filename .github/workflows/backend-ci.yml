@@ -15,16 +15,17 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      postgres:
-        image: pgvector/pgvector:pg16
+      mysql:
+        image: mysql:8.0
         env:
-          POSTGRES_DB: smartpc_db
-          POSTGRES_USER: smartpc_user
-          POSTGRES_PASSWORD: smartpc_password
+          MYSQL_DATABASE: smartpc_db
+          MYSQL_USER: smartpc_user
+          MYSQL_PASSWORD: smartpc_password
+          MYSQL_ROOT_PASSWORD: smartpc_root_password
         ports:
-          - 5432:5432
+          - 3306:3306
         options: >-
-          --health-cmd pg_isready
+          --health-cmd="mysqladmin ping -h localhost -u smartpc_user -psmartpc_password"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
