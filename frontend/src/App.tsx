@@ -1,4 +1,3 @@
-import React from 'react';
 import { Cpu, Bot, CheckCircle2, ShoppingCart, Wrench } from 'lucide-react';
 
 export default function App() {
