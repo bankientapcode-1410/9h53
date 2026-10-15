@@ -1040,264 +1040,229 @@ flowchart TD
 
 ![PC Profile & Nâng cấp](docs/screens/screen6.png)
 
-### 5.3. Prompt tạo hình ảnh giao diện qua Google Stitch
+> *Ghi chú: Toàn bộ bộ prompt chi tiết tạo giao diện qua Google Stitch đã được tách và lưu trữ độc lập tại tài liệu [docs/stitch_prompts.md](docs/stitch_prompts.md).*
 
-> *Hướng dẫn sử dụng: Truy cập [Google Stitch](https://stitch.withgoogle.com), tạo project mới, paste từng prompt bên dưới vào thanh nhập lệnh. Stitch sẽ sinh ra giao diện UI high-fidelity tương ứng. Có thể đính kèm ảnh mockup hiện tại (`docs/screens/screen0.png` — `docs/screens/screen6.png`) làm reference image để Stitch giữ nguyên bố cục cấu trúc khi cải tiến đồ họa.*
->
-> *Quy chuẩn chung cho tất cả prompt: Nền tảng TMĐT linh kiện PC Việt Nam tên "SmartPC". Bảng màu: Navy đậm (#1A2332), Xanh dương (#1A44D8), Cyan/Teal (#00BCD4), Trắng (#FFFFFF), Xám viền (#E5E7EB), Đỏ CTA (#E30019). Font: Inter hoặc Be Vietnam Pro. Ngôn ngữ hiển thị: Tiếng Việt. Desktop web resolution (1440px width). KHÔNG vẽ khung thiết bị (laptop/phone), chỉ vẽ giao diện web thuần.*
+## 6. Thiết kế Repository & Cấu trúc Thư mục (Repository Architecture & Layout)
 
----
+### 6.1. Quyết định Kiến trúc Repository (Architectural Decision Records - ADR)
 
-#### Prompt 0 — Màn hình Đăng nhập / Đăng ký (`docs/screens/screen0.png`)
+*   **ADR-01: Lựa chọn Mô hình Monorepo thay vì Multi-repo**
+    *   **Bối cảnh:** Dự án được phát triển bởi nhóm **2 kỹ sư phần mềm**, bao gồm hệ thống Core Backend (Java Monolith - Spring Boot), Frontend Web Client (ReactJS), cơ sở dữ liệu quan hệ kết hợp Vector Database và hệ thống Rule Engine.
+    *   **Quyết định:** Sử dụng mô hình **Monorepo** duy nhất chứa cả `backend/`, `frontend/`, `docker/`, `scripts/` và `docs/`.
+    *   **Lý do & Lợi ích:**
+        1.  *Đồng bộ hóa phiên bản:* Thay đổi DTO backend và Type interface frontend diễn ra trong cùng một commit/PR, triệt tiêu nguy cơ "vỡ hợp đồng API" (API Contract drift).
+        2.  *Tối ưu hóa quy trình làm việc cho nhóm 2 người:* Không phải quản lý nhiều repo, issue tracker rời rạc; dễ dàng review chéo (Dev 1 review logic của Dev 2 và ngược lại).
+        3.  *Môi trường cục bộ đồng nhất:* 1 câu lệnh `docker compose up -d` là khởi chạy được toàn bộ hệ sinh thái (Database MySQL + Redis + Mailhog + Backend + Frontend).
+        4.  *Tích hợp CI/CD tinh gọn:* Sử dụng GitHub Actions path-filtering (`paths: ['backend/**']` và `paths: ['frontend/**']`) giúp chạy test độc lập nhưng quản lý pipeline tập trung.
+
+*   **ADR-02: Lựa chọn MySQL 8.0 làm Cơ sở Dữ liệu Quan hệ Chính**
+    *   **Bối cảnh:** Hệ thống cần hệ quản trị RDBMS phổ biến, ổn định để xử lý ACID transaction cho Đơn hàng, Giỏ hàng, Quản lý Người dùng, Tập luật tương thích và Lưu trữ thông số sản phẩm dưới dạng JSON.
+    *   **Quyết định:** Sử dụng MySQL 8.0 với InnoDB engine và trường kiểu `JSON` cho specs phần cứng, vector embeddings.
+    *   **Lý do & Lợi ích:**
+        1.  *Đơn giản hóa & Phổ biến:* MySQL 8.0 thân thiện, tài liệu phong phú, hỗ trợ native kiểu dữ liệu JSON, UUID expressions và transaction cách ly cao.
+        2.  *Hiệu suất & Đồng bộ:* Bảng `product_embeddings` liên kết khóa ngoại trực tiếp `REFERENCES products(product_id) ON DELETE CASCADE`.
+        3.  *Hỗ trợ JSON Native:* MySQL 8 cung cấp hàm JSON phong phú (`JSON_EXTRACT`, `->`, `->>`) phù hợp cho các trường specs phần cứng linh hoạt.
+
+*   **ADR-03: Hardware Rule Engine nội bộ với Caffeine Cache & CompletableFuture**
+    *   **Bối cảnh:** Luồng PC Builder và Checkout yêu cầu kiểm tra tương thích liên tục khi người dùng thao tác. Độ trễ yêu cầu `< 2ms` và không được nghẽn CPU khi có nhiều luật.
+    *   **Quyết định:**
+        - Nhúng Rule Engine thành một **Internal Module** trong Spring Boot.
+        - Sử dụng **Caffeine In-Memory Cache** lưu danh sách quy tắc đang active (`@Cacheable("compat_rules")`).
+        - Sử dụng `CompletableFuture.supplyAsync()` phân bổ các nhóm quy tắc (CPU-Main, RAM-Main, GPU-Case, PSU-TDP) chạy song song trên Thread Pool riêng biệt (`ruleEngineExecutor`).
+
+### 6.2. Cấu trúc Cây Thư mục Toàn diện (Full Directory Tree)
+
 ```text
-Design a professional e-commerce login page for a Vietnamese PC hardware store called "SmartPC".
+project1/
+├── .github/
+│   ├── workflows/
+│   │   ├── backend-ci.yml                 # Maven build, JUnit test, Testcontainers
+│   │   └── frontend-ci.yml                # NPM build, TypeScript check, Lint
+│   └── pull_request_template.md           # Template kiểm tra chất lượng code PR
+├── backend/                               # Spring Boot 3.5.x + Java 21 LTS
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/com/smartpc/
+│   │   │   │   ├── SmartPcApplication.java
+│   │   │   │   ├── common/                # Các thành phần dùng chung toàn hệ thống
+│   │   │   │   │   ├── exception/         # Custom exceptions & GlobalExceptionHandler
+│   │   │   │   │   ├── response/          # ApiResponse<T>, PageResponse<T>
+│   │   │   │   │   ├── entity/            # BaseAuditEntity (created_at, updated_at)
+│   │   │   │   │   └── util/              # JsonUtil, CurrencyUtil
+│   │   │   │   ├── config/                # Cấu hình Spring Context
+│   │   │   │   │   ├── SecurityConfig.java
+│   │   │   │   │   ├── CorsConfig.java
+│   │   │   │   │   ├── CacheConfig.java   # Cấu hình Caffeine Cache
+│   │   │   │   │   ├── AsyncConfig.java   # Thread pool cho Rule Engine & Async Tasks
+│   │   │   │   │   └── SpringAiConfig.java # Vertex AI Gemini & Vector Search bean
+│   │   │   │   ├── security/              # Tầng bảo mật & phân quyền
+│   │   │   │   │   ├── JwtTokenProvider.java
+│   │   │   │   │   ├── JwtAuthenticationFilter.java
+│   │   │   │   │   ├── UserDetailsServiceImpl.java
+│   │   │   │   │   └── OAuth2SuccessHandler.java
+│   │   │   │   └── modules/               # Phân rã tính năng theo domain
+│   │   │   │       ├── auth/              # UC0: Đăng ký, Đăng nhập, Quên mật khẩu
+│   │   │   │       │   ├── controller/AuthController.java
+│   │   │   │       │   ├── service/AuthService.java
+│   │   │   │       │   └── dto/AuthRequests.java
+│   │   │   │       ├── product/           # UC1a, UC5: Quản lý Linh kiện & JSON Specs
+│   │   │   │       │   ├── controller/ProductController.java
+│   │   │   │       │   ├── service/ProductService.java
+│   │   │   │       │   ├── repository/ProductRepository.java
+│   │   │   │       │   └── entity/Product.java, Category.java
+│   │   │   │       ├── ruleengine/        # UC6: Hardware Rule Engine & Cache
+│   │   │   │       │   ├── controller/CompatRuleAdminController.java
+│   │   │   │       │   ├── service/CompatibilityService.java
+│   │   │   │       │   ├── evaluator/RuleEvaluator.java
+│   │   │   │       │   ├── calculator/AggregateCalculator.java
+│   │   │   │       │   ├── strategy/OperatorStrategy.java
+│   │   │   │       │   ├── model/RuleSeverity.java, RuleOperator.java
+│   │   │   │       │   └── dto/CompatibilityResult.java
+│   │   │   │       ├── pcbuilder/         # UC2: PC Builder & Real-time Check
+│   │   │   │       │   ├── controller/PCBuilderController.java
+│   │   │   │       │   └── service/PCBuilderService.java
+│   │   │   │       ├── pcprofile/         # UC3: Hồ sơ PC, Bottleneck & Nâng cấp
+│   │   │   │       │   ├── controller/PCProfileController.java
+│   │   │   │       │   ├── service/PCProfileService.java
+│   │   │   │       │   └── entity/PCProfile.java, ProfileComponent.java
+│   │   │   │       ├── ai/                # UC1, UC3: Gemini LLM & Vector Search
+│   │   │   │       │   ├── controller/AISearchController.java
+│   │   │   │       │   ├── service/AISearchService.java
+│   │   │   │       │   ├── service/GeminiReasoningService.java
+│   │   │   │       │   └── parser/IntentParser.java
+│   │   │   │       ├── cart/              # UC4: Giỏ hàng
+│   │   │   │       │   ├── controller/CartController.java
+│   │   │   │       │   ├── service/CartService.java
+│   │   │   │       │   └── entity/Cart.java, CartItem.java
+│   │   │   │       ├── order/             # UC4, UC7: Thanh toán ACID & Quản trị đơn
+│   │   │   │       │   ├── controller/OrderController.java
+│   │   │   │       │   ├── service/OrderService.java
+│   │   │   │       │   └── entity/Order.java, OrderDetail.java
+│   │   │   │       └── dashboard/         # UC8: Thống kê & Báo cáo
+│   │   │   │           ├── controller/DashboardController.java
+│   │   │   │           └── service/DashboardService.java
+│   │   │   └── resources/
+│   │   │       ├── application.yml
+│   │   │       ├── application-dev.yml
+│   │   │       └── db/migration/          # Flyway Database Scripts
+│   │   │           ├── V1__init_schema.sql
+│   │   │           └── V2__seed_rules.sql
+│   │   └── test/                          # Unit & Integration Tests
+│   │       └── java/com/smartpc/
+│   │           ├── ruleengine/RuleEngineBenchmarkTest.java
+│   │           └── order/CheckoutTransactionTest.java
+│   ├── pom.xml
+│   └── Dockerfile
+├── frontend/                              # React 18 + Vite + TailwindCSS
+│   ├── src/
+│   │   ├── assets/                        # Logo, biểu tượng, hình ảnh
+│   │   ├── components/                    # Atomic Reusable Components
+│   │   │   ├── ui/                        # Button, Input, Modal, Badge, Card, Select
+│   │   │   ├── layout/                    # Header, Footer, AdminSidebar
+│   │   │   └── feedback/                  # RuleAlertBanner, AIThinkingIndicator
+│   │   ├── features/                      # Chức năng nghiệp vụ
+│   │   │   ├── auth/                      # Screen 0: Login, Register modal
+│   │   │   ├── home/                      # Screen 1: Trang chủ SmartPC
+│   │   │   ├── ai-search/                 # Screen 2a, 2b, 2c: Giao diện AI Search & Fallback
+│   │   │   ├── product-detail/            # Screen 3: Chi tiết SP & Mini Compat Checker
+│   │   │   ├── pc-builder/                # Screen 4: 8-slot PC Builder & Rule Diagnostics
+│   │   │   ├── cart/                      # Screen 5a: Giỏ hàng & cảnh báo ẩn
+│   │   │   ├── checkout/                  # Screen 5b, 5c: One-page checkout & xác nhận đơn
+│   │   │   ├── pc-profile/                # Screen 6: PC Profile & Lộ trình nâng cấp AI
+│   │   │   └── admin/                     # Quản lý SP, Đơn hàng, Luật, Dashboard KPI
+│   │   ├── services/                      # Axios API clients
+│   │   ├── stores/                        # Zustand Global State
+│   │   │   ├── useAuthStore.ts
+│   │   │   ├── useCartStore.ts
+│   │   │   └── usePCBuilderStore.ts
+│   │   ├── types/                         # TypeScript interfaces
+│   │   │   └── index.ts
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   └── index.css
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tailwind.config.js
+│   ├── nginx.conf
+│   └── Dockerfile
+├── docker/
+│   ├── docker-compose.yml
+│   └── mysql/
+│       └── init.sql
+├── scripts/
+│   └── seed-compat-rules.sql
+├── docs/
+│   ├── screens/                           # Toàn bộ ảnh mockup UI (screen0.png -> screen6.png)
+│   ├── prj1.md
+│   ├── stitch_prompts.md
+│   └── REPO_DESIGN.md
+├── .gitignore
+└── README.md
 
-LAYOUT: Split-screen, 2 equal columns.
-
-LEFT COLUMN (50%):
-- Dark navy background (#1A2332)
-- Large high-quality hero image showing assembled PC components: a GPU, motherboard with RGB RAM sticks, in dramatic lighting
-- Below the image, 3 selling point items in a horizontal row with icons:
-  ✅ "Tự Động Kiểm Tra Tương Thích"
-  🤖 "Tư Vấn Nâng Cấp Bằng AI"
-  🏅 "100% Linh Kiện Chính Hãng"
-- Bottom thin bar with text: "Kho hàng sẵn sàng | Giao hỏa tốc 2H toàn quốc | Hỗ trợ Build PC: MIỄN PHÍ"
-
-RIGHT COLUMN (50%):
-- Clean white background
-- Two tabs at top: "🔗 Đăng nhập" (active, blue underline) and "✏️ Đăng ký mới"
-- Title: "Chào mừng quay trở lại!" with subtitle
-- Form fields: Email input with mail icon, Password input with lock icon and show/hide eye toggle
-- Checkbox: "Ghi nhớ đăng nhập (30 ngày)" with link "Quên mật khẩu?" aligned right
-- Large blue (#1A44D8) CTA button: "🔒 ĐĂNG NHẬP"
-- Divider line with text "HOẶC TIẾP TỤC VỚI"
-- Two outlined social login buttons side by side: "G Google" and "f Facebook"
-- Bottom text: "Chưa có tài khoản? Đăng ký tài khoản mới ngay" (link in blue)
-
-HEADER: Navy bar with logo "SmartPC", nav items: Trang chủ, Sản phẩm, Danh mục, PC Builder, PC Profile, Hỗ trợ. Language selector "VN", cart icon, user icon.
-
-FOOTER: 4-column footer.
-```
-
-#### Prompt 1 — Màn hình Trang chủ (`docs/screens/screen1.png`)
-```text
-Design a comprehensive Vietnamese e-commerce homepage for a PC hardware store called "SmartPC". Aspect ratio: 9:16 (tall).
-
-HEADER (sticky, dark navy #1A2332):
-- Logo "SmartPC", search bar with placeholder and "✨ AI prompt" button
-- Cart icon with red badge "5", user avatar "Nguyễn Văn A"
-- Navigation row below: 🏠 Trang chủ | 📦 Danh mục linh kiện ▾ | 🔧 PC Builder & Check Tương Thích | 💻 PC Profile của tôi
-
-HERO SECTION:
-- Left (60%): Dark gradient background with large text "Build PC Gaming từ 15 Triệu". Below: stats "99.98% Tương thích chính xác socket | < 2ms Thời gian rule-check". Two CTA buttons.
-- Right (40%): Featured combo product card.
-
-3 FEATURE CARDS (horizontal row):
-- AI Reasoning & Semantic Search | Hardware Rule Engine | PC Profile & Bottleneck Detection
-
-CATEGORY ICON ROW: 6 rounded square icons (CPU, GPU, RAM, SSD, Mainboard, Nguồn & Vỏ Case).
-
-TRENDING PRODUCTS SECTION:
-- 4-column product card grid. Each card: product image, name, star rating, key spec tags, price, "🛒 Thêm giỏ" and "🔧 + PC Builder" buttons.
-
-AI ASSISTANT HUB SECTION (dark navy background):
-- Gemini sparkle icon with title "Hỏi Chuyên Gia AI Phần Cứng"
-- Large search input with button "Gửi câu hỏi cho AI ✨"
-- Quick prompt chip suggestions below.
-
-FOOTER: Dark footer with 4 columns.
-```
-
-#### Prompt 2 — Nhóm Màn hình Tìm kiếm AI (`docs/screens/screen2a.png`, `docs/screens/screen2b.png`, `docs/screens/screen2c.png`)
-```text
-Design an AI-powered search results page for a Vietnamese PC hardware store "SmartPC". User searched: "Card đồ họa chơi game tầm 8 triệu".
-
-HEADER: Dark navy header.
-
-AI ANALYSIS PANEL (light blue box):
-- "AI hiểu: 'VGA gaming, budget ≤ 8tr, đồ họa NV/AMD'"
-- AI advisory paragraph explaining GPU recommendations.
-- Extracted condition tags (Category, Budget, Purpose, etc).
-
-FILTER BAR (horizontal chips):
-- Brand chips: [Tất cả] [Nvidia] [AMD] [Intel]
-- Price dropdown: "Dưới 8 triệu ▾"
-- VRAM chips: [8GB] [12GB] [16GB]
-- Sort dropdown: "✨ AI Phù hợp nhất ▾"
-
-PRODUCT RESULTS (vertical list cards):
-- Card 1: TOP PICK (95% AI match). Product image of ASUS RTX 4060, full name, rating, specs. Price. AI explanation box explaining why it matches. "Thêm vào giỏ hàng" and "Thêm vào PC Builder" buttons.
-- Card 2: BEST VALUE (89% match). AMD Radeon RX 7600.
-- Card 3: VRAM LARGE (88% match). MSI RTX 3060 12GB.
-```
-
-#### Prompt 3 — Màn hình Chi tiết sản phẩm (`docs/screens/screen3.png`)
-```text
-Design a product detail page for an NVIDIA GeForce RTX 4060 8GB GPU on "SmartPC". Layout: 2.5 columns.
-
-LEFT COLUMN (45% — Gallery):
-- Large product image on white background, "ADA LOVELACE" and "DLSS 3 Ready" badges.
-- 5 thumbnail images below. Trust badges (Chính hãng 100%, Bảo hành 36T).
-
-CENTER COLUMN (35% — Purchase Info):
-- Full name: "Card Màn Hình NVIDIA GeForce RTX 4060 8GB GDDR6 (Bản Dual Fan)"
-- Rating: ★★★★★ 5.0 (234 reviews)
-- Price: "7.990.000đ" with crossed out original price and "-10%" badge.
-- Stock: "✅ Còn hàng sẵn xuất". Quantity selector.
-- Two large CTA buttons: "🛒 Thêm vào giỏ hàng" and "🔧 Thêm vào PC Builder".
-
-RIGHT COLUMN (20% — Compatibility Widget):
-- Title: "⚙️ Kiểm tra tương thích phần cứng"
-- Check results:
-  🟢 "Chuẩn khe cắm PCIe: HOÀN TOÀN TƯƠNG THÍCH"
-  🟡 "Kích thước khoang vỏ Case: VỪA VẶN KHÔNG"
-  🔴 "Công suất nguồn đề xuất: CẦN NÂNG CẤP KHUYẾN NGHỊ"
-
-BELOW FOLD:
-- Left: Technical Specs Table (zebra striping)
-- Right: AI Hardware Rating box with benchmark FPS scores (Cyberpunk 2077, CS2).
-```
-
-#### Prompt 4 — Màn hình PC Builder (`docs/screens/screen4.png`)
-```text
-Design a PC Builder & Compatibility Checker tool page for "SmartPC".
-
-HEADER & TITLE: "XÂY DỰNG CẤU HÌNH MÁY TÍNH & KIỂM TRA TƯƠNG THÍCH".
-
-DASHBOARD SUMMARY BAR (4 metric cards in a row):
-1. TỔNG CHI PHÍ CẤU HÌNH: 25.460.000đ
-2. TỔNG TDP ƯỚC TÍNH: 280W (bar chart)
-3. TRẠNG THÁI RULE ENGINE: 1 Xung đột vật lý nghiêm trọng (red badge)
-4. GEMINI BALANCE INDEX: 78/100
-
-COMPONENT LIST SECTION (left 65%):
-Row-by-row (CPU, Mainboard, RAM, VGA, SSD, PSU, Case, Cooler).
-- CPU: Intel Core i7-13700K (selected).
-- Mainboard: ASUS ROG Strix X670E-F with RED ERROR BANNER "❌ XUNG ĐỘT SOCKET". Quick fix suggestions below.
-- RAM, VGA, SSD selected with green compatibility badges.
-- PSU: Highlighted yellow box "BẮT BUỘC CHỌN | Khuyến nghị: ≥ 550W".
-
-RIGHT SIDEBAR (35%) — "Chẩn Đoán Hardware Rule Engine":
-- Error section detailing socket mismatch.
-- Warning section about PSU capacity.
-- Gemini AI Hardware Advisor panel with bottleneck analysis.
-
-STICKY BOTTOM BAR: Progress (5/8 linh kiện), Total Price, "Thêm tất cả vào giỏ hàng" button.
-```
-
-#### Prompt 5 — Nhóm Màn hình Giỏ hàng & Thanh toán (`docs/screens/screen5a.png`, `docs/screens/screen5b.png`, `docs/screens/screen5c.png`)
-```text
-Design a shopping cart and one-page checkout flow for "SmartPC".
-
-CART PAGE:
-- Step indicator: ① Giỏ hàng & Rule Engine (active) ——→ ② Thanh toán ——→ ③ Hoàn tất
-- Yellow Warning Banner at top: "CẢNH BÁO XUNG ĐỘT TƯƠNG THÍCH PHẦN CỨNG" regarding RAM bus speed.
-- Left column (65%): List of 3 items (GPU, CPU, RAM) with thumbnail, specs tags, price, and quantity selector. Cross-sell section below "Mua kèm giảm sốc".
-- Right column (35%): Sticky Order Summary. Subtotal, Shipping, Coupon input, Total "18.990.000đ". "Tiến hành thanh toán →" button.
-
-CHECKOUT PAGE (One-page):
-- Left column: Delivery Info form (Name, Phone, Address, Delivery notes). Payment Methods radio buttons (COD, VietQR, E-wallet, Installment). Rule Engine confirmation badge "PASSED - AN TOÀN".
-- Right column: Sticky sidebar with order summary (3 mini-cards for products), total price, and large red "ĐẶT HÀNG NGAY" button.
-
-ORDER CONFIRMATION:
-- Success hero section (green) with checkmark: "ĐẶT HÀNG THÀNH CÔNG!".
-- Order info bar (Order ID, Date, Total, COD, Status).
-- Left: List of 3 components ordered.
-- Right: Delivery info and vertical timeline "Lộ trình xử lý đơn hàng".
-- Banner suggesting to add these items to the user's "PC Profile".
-```
-
-#### Prompt 6 — Màn hình PC Profile & Nâng cấp (`docs/screens/screen6.png`)
-```text
-Design a PC Profile and AI-powered upgrade suggestion page for "SmartPC".
-
-TITLE SECTION: "HỒ SƠ HỆ THỐNG: PC Gaming của tôi" with "AI Verified Profile" badge.
-
-DASHBOARD CARDS:
-- CHỈ SỐ CÂN BẰNG: 61/100
-- MỨC NGHẼN ĐỒ HỌA GPU: 28.4%
-- TẢI ĐIỆN ÁP ƯỚC TÍNH: 310W / 550W
-
-LEFT SECTION (55%) — "Cấu hình hiện tại & Phân khúc" (6 Components):
-- CPU: i5-12400F — Tier bar 62% (yellow/amber)
-- GPU: GTX 1660 Super — Tier bar 50% (RED fill, pulsing) with "⚠️ Yếu nhất hệ thống" warning (Bottleneck)
-- RAM, SSD, Mainboard, PSU listed with specs and tier bars.
-
-RIGHT SECTION (45%) — Bottleneck Analysis:
-- "Phân tích điểm nghẽn hệ thống" panel. Red alert: GPU Bottleneck.
-- FPS Comparison bars: Cyberpunk 2077 (Hiện tại 42 FPS → Sau nâng cấp 85+ FPS).
-
-UPGRADE ROADMAP SECTION:
-- "Lộ trình nâng cấp tối ưu (Rule Engine Verified)".
-- Priority 1: GPU RTX 4060 8GB. Shows compatibility checks (PSU OK, PCIe OK, Case OK). "+ Thêm món này vào giỏ" button.
-- Priority 2: SSD 1TB.
-- Combo Deal Bar at bottom: "Gói Nâng Cấp Toàn Diện (Combo 3 Món)" showing discounted bundle price and "Thêm tất cả vào Giỏ hàng" button.
-```
-
-## 6. Cấu trúc Phân rã Công việc (WBS) theo Chức năng
+## 7. Cấu trúc Phân rã Công việc (WBS) theo Chức năng
 
 Dựa vào tài liệu đặc tả, dưới đây là WBS phân rã hệ thống theo dạng cây chức năng (Feature-based WBS). Hệ thống được chia thành các phân hệ (Module) lớn, mỗi phân hệ tương ứng với các Use-Case cốt lõi và được bẻ nhỏ thành các tác vụ (Task) phát triển cụ thể.
 
 ```text
 Nền tảng TMĐT Linh kiện Thông minh
 │
-├──── 6.1 Quản lý Tài khoản & Xác thực (UC0, UC7)
-│     ├──── 6.1.1 Thiết kế Database User, Phân quyền Role (Admin/User)
-│     ├──── 6.1.2 Đăng ký/Đăng nhập bằng Email & Mật khẩu
-│     ├──── 6.1.3 Đăng nhập qua mạng xã hội (Google, Facebook)
-│     ├──── 6.1.4 Quản lý JWT Token/Session
-│     ├──── 6.1.5 Quản lý trạng thái tài khoản (Admin khóa/mở tài khoản)
-│     ├──── 6.1.6 Quản lý Quên mật khẩu & Khóa tạm thời khi sai mật khẩu 5 lần
-│     └──── 6.1.7 Trang Quản lý Hồ sơ cá nhân & Lịch sử đơn hàng (User)
+├──── 7.1 Quản lý Tài khoản & Xác thực (UC0, UC7)
+│     ├──── 7.1.1 Thiết kế Database User, Phân quyền Role (Admin/User)
+│     ├──── 7.1.2 Đăng ký/Đăng nhập bằng Email & Mật khẩu
+│     ├──── 7.1.3 Đăng nhập qua mạng xã hội (Google, Facebook)
+│     ├──── 7.1.4 Quản lý JWT Token/Session
+│     ├──── 7.1.5 Quản lý trạng thái tài khoản (Admin khóa/mở tài khoản)
+│     ├──── 7.1.6 Quản lý Quên mật khẩu & Khóa tạm thời khi sai mật khẩu 5 lần
+│     └──── 7.1.7 Trang Quản lý Hồ sơ cá nhân & Lịch sử đơn hàng (User)
 │
-├──── 6.2 Quản lý Sản phẩm & Danh mục (UC1a, UC5)
-│     ├──── 6.2.1 Quản lý Cây danh mục (Category)
-│     ├──── 6.2.2 Quản lý Thông tin cơ bản linh kiện (Tên, Ảnh, Giá, Tồn kho)
-│     ├──── 6.2.3 Quản lý Thông số kỹ thuật động (Dynamic JSON Specs)
-│     ├──── 6.2.4 Tự động đồng bộ Embedding Vector vào Vector DB khi lưu SP
-│     ├──── 6.2.5 Trang danh sách & Duyệt sản phẩm theo danh mục (Frontend - UC1a)
-│     └──── 6.2.6 Chức năng đồng bộ lại Vector DB thủ công (Manual Re-sync Vector)
+├──── 7.2 Quản lý Sản phẩm & Danh mục (UC1a, UC5)
+│     ├──── 7.2.1 Quản lý Cây danh mục (Category)
+│     ├──── 7.2.2 Quản lý Thông tin cơ bản linh kiện (Tên, Ảnh, Giá, Tồn kho)
+│     ├──── 7.2.3 Quản lý Thông số kỹ thuật động (Dynamic JSON Specs)
+│     ├──── 7.2.4 Tự động đồng bộ Embedding Vector vào Vector DB khi lưu SP
+│     ├──── 7.2.5 Trang danh sách & Duyệt sản phẩm theo danh mục (Frontend - UC1a)
+│     └──── 7.2.6 Chức năng đồng bộ lại Vector DB thủ công (Manual Re-sync Vector)
 │
-├──── 6.3 Tìm kiếm Ngữ nghĩa & AI Chat (UC1)
-│     ├──── 6.3.1 Giao diện Chat/Thanh tìm kiếm AI (Frontend)
-│     ├──── 6.3.2 Tích hợp LLM để phân tích ý định (Intent Parsing)
-│     ├──── 6.3.3 Truy vấn độ tương tự trong Vector DB (Similarity Search)
-│     ├──── 6.3.4 AI suy luận, đánh giá sự phù hợp và tạo câu trả lời
-│     └──── 6.3.5 Fallback sang tìm kiếm từ khóa ElasticSearch khi AI lỗi
+├──── 7.3 Tìm kiếm Ngữ nghĩa & AI Chat (UC1)
+│     ├──── 7.3.1 Giao diện Chat/Thanh tìm kiếm AI (Frontend)
+│     ├──── 7.3.2 Tích hợp LLM để phân tích ý định (Intent Parsing)
+│     ├──── 7.3.3 Truy vấn độ tương tự trong Vector DB (Similarity Search)
+│     ├──── 7.3.4 AI suy luận, đánh giá sự phù hợp và tạo câu trả lời
+│     └──── 7.3.5 Fallback sang tìm kiếm từ khóa ElasticSearch khi AI lỗi
 │
-├──── 6.4 Core Rule Engine - Quản lý Tập luật (UC6)
-│     ├──── 6.4.1 Quản lý Tập luật (Giao diện Admin Thêm/Sửa/Xóa Luật)
-│     ├──── 6.4.2 Validate cấu trúc dữ liệu Luật (Source, Target, Spec_key, Operator)
-│     ├──── 6.4.3 Xây dựng Evaluator xử lý phép toán (EQUALS, IN, LTE, GTE...)
-│     ├──── 6.4.4 Xây dựng Aggregate Calculator (Tính tổng số RAM, tổng TDP...)
-│     └──── 6.4.5 Tích hợp Hệ thống Cache In-Memory (Caffeine) cho Rules
+├──── 7.4 Core Rule Engine - Quản lý Tập luật (UC6)
+│     ├──── 7.4.1 Quản lý Tập luật (Giao diện Admin Thêm/Sửa/Xóa Luật)
+│     ├──── 7.4.2 Validate cấu trúc dữ liệu Luật (Source, Target, Spec_key, Operator)
+│     ├──── 7.4.3 Xây dựng Evaluator xử lý phép toán (EQUALS, IN, LTE, GTE...)
+│     ├──── 7.4.4 Xây dựng Aggregate Calculator (Tính tổng số RAM, tổng TDP...)
+│     └──── 7.4.5 Tích hợp Hệ thống Cache In-Memory (Caffeine) cho Rules
 │
-├──── 6.5 Công cụ Xây dựng PC - PC Builder (UC2)
-│     ├──── 6.5.1 Giao diện chọn linh kiện theo slot (CPU, Mainboard, RAM, GPU...)
-│     ├──── 6.5.2 Xử lý gọi Rule Engine để check tương thích khi thêm món mới
-│     ├──── 6.5.3 Hiển thị thông báo màu sắc theo mức độ (ERROR, WARNING)
-│     ├──── 6.5.4 Thuật toán chặn/cảnh báo rủi ro khi có vi phạm xung đột
-│     ├──── 6.5.5 Gợi ý linh kiện thay thế tương thích (Quick Fix Suggestions)
-│     └──── 6.5.6 Chức năng đẩy toàn bộ cấu hình PC vào giỏ hàng
+├──── 7.5 Công cụ Xây dựng PC - PC Builder (UC2)
+│     ├──── 7.5.1 Giao diện chọn linh kiện theo slot (CPU, Mainboard, RAM, GPU...)
+│     ├──── 7.5.2 Xử lý gọi Rule Engine để check tương thích khi thêm món mới
+│     ├──── 7.5.3 Hiển thị thông báo màu sắc theo mức độ (ERROR, WARNING)
+│     ├──── 7.5.4 Thuật toán chặn/cảnh báo rủi ro khi có vi phạm xung đột
+│     ├──── 7.5.5 Gợi ý linh kiện thay thế tương thích (Quick Fix Suggestions)
+│     └──── 7.5.6 Chức năng đẩy toàn bộ cấu hình PC vào giỏ hàng
 │
-├──── 6.6 Hồ sơ PC & Đề xuất nâng cấp (UC3)
-│     ├──── 6.6.1 Chức năng tạo, xem và lưu Hồ sơ cấu hình cá nhân (PC Profile)
-│     ├──── 6.6.2 Prompt Engineering để AI phân tích điểm nghẽn (Bottleneck)
-│     ├──── 6.6.3 Thuật toán AI tìm linh kiện thay thế phù hợp ngân sách
-│     ├──── 6.6.4 Chạy Rule Engine kiểm tra nguồn, mainboard cho món được đề xuất
-│     └──── 6.6.5 Hiển thị lộ trình nâng cấp kèm giải thích chuyên sâu từ AI
+├──── 7.6 Hồ sơ PC & Đề xuất nâng cấp (UC3)
+│     ├──── 7.6.1 Chức năng tạo, xem và lưu Hồ sơ cấu hình cá nhân (PC Profile)
+│     ├──── 7.6.2 Prompt Engineering để AI phân tích điểm nghẽn (Bottleneck)
+│     ├──── 7.6.3 Thuật toán AI tìm linh kiện thay thế phù hợp ngân sách
+│     ├──── 7.6.4 Chạy Rule Engine kiểm tra nguồn, mainboard cho món được đề xuất
+│     └──── 7.6.5 Hiển thị lộ trình nâng cấp kèm giải thích chuyên sâu từ AI
 │
-├──── 6.7 Quản lý Giỏ hàng & Thanh toán (UC4)
-│     ├──── 6.7.1 Quản lý Giỏ hàng (Thêm, sửa số lượng, xóa)
-│     ├──── 6.7.2 Kiểm tra tương thích chéo ẩn cho toàn bộ Giỏ hàng trước checkout
-│     ├──── 6.7.3 Form điền địa chỉ & Chọn phương thức thanh toán
-│     ├──── 6.7.4 Xử lý trừ tồn kho đồng thời và Tạo Đơn hàng (Order PENDING)
-│     └──── 6.7.5 Tích hợp Gửi Email xác nhận đặt hàng thành công
+├──── 7.7 Quản lý Giỏ hàng & Thanh toán (UC4)
+│     ├──── 7.7.1 Quản lý Giỏ hàng (Thêm, sửa số lượng, xóa)
+│     ├──── 7.7.2 Kiểm tra tương thích chéo ẩn cho toàn bộ Giỏ hàng trước checkout
+│     ├──── 7.7.3 Form điền địa chỉ & Chọn phương thức thanh toán
+│     ├──── 7.7.4 Xử lý trừ tồn kho đồng thời và Tạo Đơn hàng (Order PENDING)
+│     └──── 7.7.5 Tích hợp Gửi Email xác nhận đặt hàng thành công
 │
-└──── 6.8 Quản lý Đơn hàng & Thống kê (UC7, UC8)
-      ├──── 6.8.1 Giao diện Admin quản lý danh sách Đơn hàng (UC7)
-      ├──── 6.8.2 Flow cập nhật trạng thái (PENDING, CONFIRMED, SHIPPING, DELIVERED)
-      ├──── 6.8.3 Xử lý Hủy đơn và Hoàn lại tồn kho
-      ├──── 6.8.4 Tích hợp Gửi Email thông báo khi thay đổi trạng thái
-      └──── 6.8.5 Dashboard thống kê doanh thu và số lượng đơn hàng (UC8)
+└──── 7.8 Quản lý Đơn hàng & Thống kê (UC7, UC8)
+      ├──── 7.8.1 Giao diện Admin quản lý danh sách Đơn hàng (UC7)
+      ├──── 7.8.2 Flow cập nhật trạng thái (PENDING, CONFIRMED, SHIPPING, DELIVERED)
+      ├──── 7.8.3 Xử lý Hủy đơn và Hoàn lại tồn kho
+      ├──── 7.8.4 Tích hợp Gửi Email thông báo khi thay đổi trạng thái
+      └──── 7.8.5 Dashboard thống kê doanh thu và số lượng đơn hàng (UC8)
 ```
