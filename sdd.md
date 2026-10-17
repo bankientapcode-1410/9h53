@@ -909,6 +909,10 @@ sequenceDiagram
 4. **Rule Engine Validation (Bước chốt chặn):** Nhờ tích hợp chung trong Core Backend, AI Module gọi hàm kiểm tra tương thích của Rule Engine một cách trực tiếp (Method Call) đối với từng ứng viên linh kiện. Ví dụ: Nếu CPU mới khác socket so với Mainboard cũ, Rule Engine sẽ báo ERROR ngay lập tức. Khi đó AI sẽ biết phải gợi ý thay cả Mainboard, hoặc tìm CPU khác cùng socket.
 5. **Output:** Sau khi tìm được phương án tối ưu (Hiệu năng tốt + Đúng ngân sách + Rule Engine báo tương thích an toàn), AI sẽ sinh văn bản giải thích lý luận của mình và trả về Frontend để người dùng tham khảo và bấm "Thêm vào giỏ".
 
+> **Tài liệu Thiết kế Chi tiết (Detailed Design - DD) theo từng phân hệ:**
+> * **Core Rule Engine - Quản lý Tập luật (UC6):** [docs/detail-design/dd-uc6-core-rule-engine.md](docs/detail-design/dd-uc6-core-rule-engine.md)
+> * **Java Runtime Upgrade (Java 25 LTS):** [docs/detail-design/dd-java-runtime-upgrade.md](docs/detail-design/dd-java-runtime-upgrade.md)
+
 ## 5. Thiết kế giao diện người dùng (UI/UX)
 
 ### 5.1. Sơ đồ di chuyển màn hình (Screen Navigation Flow)
@@ -1051,7 +1055,7 @@ project1/
 │   │   ├── backend-ci.yml                 # Maven build, JUnit test, Testcontainers
 │   │   └── frontend-ci.yml                # NPM build, TypeScript check, Lint
 │   └── pull_request_template.md           # Template kiểm tra chất lượng code PR
-├── backend/                               # Spring Boot 3.5.x + Java 21 LTS
+├── backend/                               # Spring Boot 3.5.x + Java 25 LTS
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/smartpc/
@@ -1164,11 +1168,16 @@ project1/
 ├── scripts/
 │   └── seed-compat-rules.sql
 ├── docs/
+│   ├── detail-design/                     # Tài liệu Thiết kế chi tiết (Detailed Design - DD)
+│   │   ├── dd-uc6-core-rule-engine.md     # DD cho Core Rule Engine & Quản lý Tập luật (UC6)
+│   │   └── dd-java-runtime-upgrade.md     # DD nâng cấp Java Runtime lên Java 25 LTS
 │   ├── screens/                           # Toàn bộ ảnh mockup UI (screen0.png -> screen6.png)
 │   ├── prj1.md
 │   ├── stitch_prompts.md
 │   └── REPO_DESIGN.md
 ├── .gitignore
+├── AGENTS.md                              # Quy định bắt buộc cho AI Agent (DD-First Rule)
+├── GEMINI.md                              # Cấu hình chỉ dẫn AI Agent
 └── README.md
 ```
 
@@ -1179,63 +1188,63 @@ Dựa vào tài liệu đặc tả, dưới đây là WBS phân rã hệ thống
 ```text
 Nền tảng TMĐT Linh kiện Thông minh
 │
-├──── 7.1 Quản lý Tài khoản & Xác thực (UC0, UC7)
-│     ├──── 7.1.1 Thiết kế Database User, Phân quyền Role (Admin/User)
-│     ├──── 7.1.2 Đăng ký/Đăng nhập bằng Email & Mật khẩu
-│     ├──── 7.1.3 Đăng nhập qua mạng xã hội (Google, Facebook)
-│     ├──── 7.1.4 Quản lý JWT Token/Session
-│     ├──── 7.1.5 Quản lý trạng thái tài khoản (Admin khóa/mở tài khoản)
-│     ├──── 7.1.6 Quản lý Quên mật khẩu & Khóa tạm thời khi sai mật khẩu 5 lần
-│     └──── 7.1.7 Trang Quản lý Hồ sơ cá nhân & Lịch sử đơn hàng (User)
+├──── Quản lý Tài khoản & Xác thực (UC0, UC7)
+│     ├──── Thiết kế Database User, Phân quyền Role (Admin/User)
+│     ├──── Đăng ký/Đăng nhập bằng Email & Mật khẩu
+│     ├──── Đăng nhập qua mạng xã hội (Google, Facebook)
+│     ├──── Quản lý JWT Token/Session
+│     ├──── Quản lý trạng thái tài khoản (Admin khóa/mở tài khoản)
+│     ├──── Quản lý Quên mật khẩu & Khóa tạm thời khi sai mật khẩu 5 lần
+│     └──── Trang Quản lý Hồ sơ cá nhân & Lịch sử đơn hàng (User)
 │
-├──── 7.2 Quản lý Sản phẩm & Danh mục (UC1a, UC5)
-│     ├──── 7.2.1 Quản lý Cây danh mục (Category)
-│     ├──── 7.2.2 Quản lý Thông tin cơ bản linh kiện (Tên, Ảnh, Giá, Tồn kho)
-│     ├──── 7.2.3 Quản lý Thông số kỹ thuật động (Dynamic JSON Specs)
-│     ├──── 7.2.4 Tự động đồng bộ Embedding Vector vào Vector DB khi lưu SP
-│     ├──── 7.2.5 Trang danh sách & Duyệt sản phẩm theo danh mục (Frontend - UC1a)
-│     └──── 7.2.6 Chức năng đồng bộ lại Vector DB thủ công (Manual Re-sync Vector)
+├──── Quản lý Sản phẩm & Danh mục (UC1a, UC5)
+│     ├──── Quản lý Cây danh mục (Category)
+│     ├──── Quản lý Thông tin cơ bản linh kiện (Tên, Ảnh, Giá, Tồn kho)
+│     ├──── Quản lý Thông số kỹ thuật động (Dynamic JSON Specs)
+│     ├──── Tự động đồng bộ Embedding Vector vào Vector DB khi lưu SP
+│     ├──── Trang danh sách & Duyệt sản phẩm theo danh mục (Frontend - UC1a)
+│     └──── Chức năng đồng bộ lại Vector DB thủ công (Manual Re-sync Vector)
 │
-├──── 7.3 Tìm kiếm Ngữ nghĩa & AI Chat (UC1)
-│     ├──── 7.3.1 Giao diện Chat/Thanh tìm kiếm AI (Frontend)
-│     ├──── 7.3.2 Tích hợp LLM để phân tích ý định (Intent Parsing)
-│     ├──── 7.3.3 Truy vấn độ tương tự trong Vector DB (Similarity Search)
-│     ├──── 7.3.4 AI suy luận, đánh giá sự phù hợp và tạo câu trả lời
-│     └──── 7.3.5 Fallback sang tìm kiếm từ khóa ElasticSearch khi AI lỗi
+├──── Tìm kiếm Ngữ nghĩa & AI Chat (UC1)
+│     ├──── Giao diện Chat/Thanh tìm kiếm AI (Frontend)
+│     ├──── Tích hợp LLM để phân tích ý định (Intent Parsing)
+│     ├──── Truy vấn độ tương tự trong Vector DB (Similarity Search)
+│     ├──── AI suy luận, đánh giá sự phù hợp và tạo câu trả lời
+│     └──── Fallback sang tìm kiếm từ khóa ElasticSearch khi AI lỗi
 │
-├──── 7.4 Core Rule Engine - Quản lý Tập luật (UC6)
-│     ├──── 7.4.1 Quản lý Tập luật (Giao diện Admin Thêm/Sửa/Xóa Luật)
-│     ├──── 7.4.2 Validate cấu trúc dữ liệu Luật (Source, Target, Spec_key, Operator)
-│     ├──── 7.4.3 Xây dựng Evaluator xử lý phép toán (EQUALS, IN, LTE, GTE...)
-│     ├──── 7.4.4 Xây dựng Aggregate Calculator (Tính tổng số RAM, tổng TDP...)
-│     └──── 7.4.5 Tích hợp Hệ thống Cache In-Memory (Caffeine) cho Rules
+├──── Core Rule Engine - Quản lý Tập luật (UC6)
+│     ├──── Quản lý Tập luật (Giao diện Admin Thêm/Sửa/Xóa Luật)
+│     ├──── Validate cấu trúc dữ liệu Luật (Source, Target, Spec_key, Operator)
+│     ├──── Xây dựng Evaluator xử lý phép toán (EQUALS, IN, LTE, GTE...)
+│     ├──── Xây dựng Aggregate Calculator (Tính tổng số RAM, tổng TDP...)
+│     └──── Tích hợp Hệ thống Cache In-Memory (Caffeine) cho Rules
 │
-├──── 7.5 Công cụ Xây dựng PC - PC Builder (UC2)
-│     ├──── 7.5.1 Giao diện chọn linh kiện theo slot (CPU, Mainboard, RAM, GPU...)
-│     ├──── 7.5.2 Xử lý gọi Rule Engine để check tương thích khi thêm món mới
-│     ├──── 7.5.3 Hiển thị thông báo màu sắc theo mức độ (ERROR, WARNING)
-│     ├──── 7.5.4 Thuật toán chặn/cảnh báo rủi ro khi có vi phạm xung đột
-│     ├──── 7.5.5 Gợi ý linh kiện thay thế tương thích (Quick Fix Suggestions)
-│     └──── 7.5.6 Chức năng đẩy toàn bộ cấu hình PC vào giỏ hàng
+├──── Công cụ Xây dựng PC - PC Builder (UC2)
+│     ├──── Giao diện chọn linh kiện theo slot (CPU, Mainboard, RAM, GPU...)
+│     ├──── Xử lý gọi Rule Engine để check tương thích khi thêm món mới
+│     ├──── Hiển thị thông báo màu sắc theo mức độ (ERROR, WARNING)
+│     ├──── Thuật toán chặn/cảnh báo rủi ro khi có vi phạm xung đột
+│     ├──── Gợi ý linh kiện thay thế tương thích (Quick Fix Suggestions)
+│     └──── Chức năng đẩy toàn bộ cấu hình PC vào giỏ hàng
 │
-├──── 7.6 Hồ sơ PC & Đề xuất nâng cấp (UC3)
-│     ├──── 7.6.1 Chức năng tạo, xem và lưu Hồ sơ cấu hình cá nhân (PC Profile)
-│     ├──── 7.6.2 Prompt Engineering để AI phân tích điểm nghẽn (Bottleneck)
-│     ├──── 7.6.3 Thuật toán AI tìm linh kiện thay thế phù hợp ngân sách
-│     ├──── 7.6.4 Chạy Rule Engine kiểm tra nguồn, mainboard cho món được đề xuất
-│     └──── 7.6.5 Hiển thị lộ trình nâng cấp kèm giải thích chuyên sâu từ AI
+├──── Hồ sơ PC & Đề xuất nâng cấp (UC3)
+│     ├──── Chức năng tạo, xem và lưu Hồ sơ cấu hình cá nhân (PC Profile)
+│     ├──── Prompt Engineering để AI phân tích điểm nghẽn (Bottleneck)
+│     ├──── Thuật toán AI tìm linh kiện thay thế phù hợp ngân sách
+│     ├──── Chạy Rule Engine kiểm tra nguồn, mainboard cho món được đề xuất
+│     └──── Hiển thị lộ trình nâng cấp kèm giải thích chuyên sâu từ AI
 │
-├──── 7.7 Quản lý Giỏ hàng & Thanh toán (UC4)
-│     ├──── 7.7.1 Quản lý Giỏ hàng (Thêm, sửa số lượng, xóa)
-│     ├──── 7.7.2 Kiểm tra tương thích chéo ẩn cho toàn bộ Giỏ hàng trước checkout
-│     ├──── 7.7.3 Form điền địa chỉ & Chọn phương thức thanh toán
-│     ├──── 7.7.4 Xử lý trừ tồn kho đồng thời và Tạo Đơn hàng (Order PENDING)
-│     └──── 7.7.5 Tích hợp Gửi Email xác nhận đặt hàng thành công
+├──── Quản lý Giỏ hàng & Thanh toán (UC4)
+│     ├──── Quản lý Giỏ hàng (Thêm, sửa số lượng, xóa)
+│     ├──── Kiểm tra tương thích chéo ẩn cho toàn bộ Giỏ hàng trước checkout
+│     ├──── Form điền địa chỉ & Chọn phương thức thanh toán
+│     ├──── Xử lý trừ tồn kho đồng thời và Tạo Đơn hàng (Order PENDING)
+│     └──── Tích hợp Gửi Email xác nhận đặt hàng thành công
 │
-└──── 7.8 Quản lý Đơn hàng & Thống kê (UC7, UC8)
-      ├──── 7.8.1 Giao diện Admin quản lý danh sách Đơn hàng (UC7)
-      ├──── 7.8.2 Flow cập nhật trạng thái (PENDING, CONFIRMED, SHIPPING, DELIVERED)
-      ├──── 7.8.3 Xử lý Hủy đơn và Hoàn lại tồn kho
-      ├──── 7.8.4 Tích hợp Gửi Email thông báo khi thay đổi trạng thái
-      └──── 7.8.5 Dashboard thống kê doanh thu và số lượng đơn hàng (UC8)
+└──── Quản lý Đơn hàng & Thống kê (UC7, UC8)
+      ├──── Giao diện Admin quản lý danh sách Đơn hàng (UC7)
+      ├──── Flow cập nhật trạng thái (PENDING, CONFIRMED, SHIPPING, DELIVERED)
+      ├──── Xử lý Hủy đơn và Hoàn lại tồn kho
+      ├──── Tích hợp Gửi Email thông báo khi thay đổi trạng thái
+      └──── Dashboard thống kê doanh thu và số lượng đơn hàng (UC8)
 ```

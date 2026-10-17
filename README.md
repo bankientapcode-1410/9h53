@@ -1,7 +1,7 @@
 # ⚡ SmartPC - Nền Tảng TMĐT Linh Kiện & Build PC Tương Thích Thông Minh
 
 [![Spring Boot 3.5](https://img.shields.io/badge/Spring_Boot-3.5.x-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
-[![Java 21](https://img.shields.io/badge/Java-21_LTS-orange.svg?logo=openjdk)](https://openjdk.org/)
+[![Java 25](https://img.shields.io/badge/Java-25_LTS-orange.svg?logo=openjdk)](https://openjdk.org/projects/jdk/25/)
 [![React 18](https://img.shields.io/badge/React-18-blue.svg?logo=react)](https://react.dev/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1.svg?logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED.svg?logo=docker)](https://www.docker.com/)
@@ -15,14 +15,14 @@ SmartPC là giải pháp thương mại điện tử chuyên sâu cho lĩnh vự
 
 ## 🏛️ 1. Kiến trúc Tổng thể (High-Level Architecture)
 
-Dự án áp dụng mô hình **Monorepo** với kiến trúc **Java Monolith (Spring Boot 3.5 + Java 21)** kết hợp **React 18 Frontend**, được tối ưu cho nhóm phát triển 2 người (loại bỏ chi phí vận hành microservices và độ trễ gọi mạng cục bộ).
+Dự án áp dụng mô hình **Monorepo** với kiến trúc **Java Monolith (Spring Boot 3.5 + Java 25 LTS)** kết hợp **React 18 Frontend**, được tối ưu cho nhóm phát triển 2 người (loại bỏ chi phí vận hành microservices và độ trễ gọi mạng cục bộ).
 
 ```mermaid
 flowchart TD
     Client["Frontend (React 18 + Vite + TailwindCSS)"]
     Client -->|"REST API / JSON (Port 8080)"| CoreBackend["Core Backend (Spring Boot Monolith)"]
     
-    subgraph CoreBackend ["Core Backend (Java 21)"]
+    subgraph CoreBackend ["Core Backend (Java 25)"]
         direction TB
         AuthModule["Auth & Security (JWT, OAuth2)"]
         CatalogModule["Catalog & JSON Specs"]
@@ -54,9 +54,9 @@ flowchart TD
 .
 ├── .github/
 │   └── workflows/
-│       ├── backend-ci.yml           # CI: Build, Unit test Spring Boot với JDK 21
+│       ├── backend-ci.yml           # CI: Build, Unit test Spring Boot với JDK 25
 │       └── frontend-ci.yml          # CI: Lint, Type-check, Build React Vite
-├── backend/                         # Core Monolith (Spring Boot 3.5.x, Java 21)
+├── backend/                         # Core Monolith (Spring Boot 3.5.x, Java 25)
 │   ├── src/main/java/com/smartpc/
 │   │   ├── SmartPcApplication.java  # Main Application Entry Point
 │   │   ├── common/                  # Global exceptions, ApiResponse, BaseEntity
@@ -76,7 +76,7 @@ flowchart TD
 │   │   ├── application-dev.yml      # Cấu hình môi trường dev
 │   │   └── db/migration/            # Flyway Migrations (V1 Schema, V2 Rules Seed)
 │   ├── pom.xml                      # Maven Dependencies
-│   └── Dockerfile                   # Multi-stage Java 21 Container Build
+│   └── Dockerfile                   # Multi-stage Java 25 Container Build
 ├── frontend/                        # Web Client (React 18, Vite, TypeScript, TailwindCSS)
 │   ├── src/
 │   │   ├── components/              # Reusable UI (Button, Modal, Badges, QuickChips)

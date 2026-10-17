@@ -41,7 +41,7 @@ project1/
 │   │   ├── backend-ci.yml                 # Maven build, JUnit test, Testcontainers
 │   │   └── frontend-ci.yml                # NPM build, TypeScript check, Lint
 │   └── pull_request_template.md           # Template kiểm tra chất lượng code PR
-├── backend/                               # Spring Boot 3.5.x + Java 21 LTS
+├── backend/                               # Spring Boot 3.5.x + Java 25 LTS
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/smartpc/
@@ -217,6 +217,6 @@ Format chuẩn: `<type>(<scope>): <mô tả ngắn>`
 
 ### 4.3. Quy trình Review Code (Pull Request Protocol)
 1. Dev mở Pull Request vào nhánh `develop`.
-2. GitHub Actions tự động kiểm tra: Compile mã nguồn, chạy bộ kiểm thử Unit Test của Java 21, kiểm tra TypeScript và Build React.
+2. GitHub Actions tự động kiểm tra: Compile mã nguồn, chạy bộ kiểm thử Unit Test của Java 25, kiểm tra TypeScript và Build React.
 3. Dev còn lại tiến hành Code Review, phản hồi và Approve.
 4. Merge vào `develop` theo hình thức **Squash and Merge** để giữ lịch sử Git luôn sạch sẽ.

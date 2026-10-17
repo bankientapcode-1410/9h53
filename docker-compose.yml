@@ -53,7 +53,7 @@ services:
     restart: always
 
   # ========================================================
-  # Core Backend (Spring Boot 3.5 + Java 21)
+  # Core Backend (Spring Boot 3.5 + Java 25)
   # ========================================================
   backend:
     build:

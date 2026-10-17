@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.0</version>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
     <groupId>com.smartpc</groupId>
@@ -16,7 +16,7 @@
     <description>E-Commerce Platform with Hardware Rule Engine and AI Reasoning</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <spring-ai.version>1.0.0-M3</spring-ai.version>
         <jjwt.version>0.12.6</jjwt.version>
         <caffeine.version>3.1.8</caffeine.version>
