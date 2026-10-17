@@ -1044,34 +1044,6 @@ flowchart TD
 
 ## 6. Thiết kế Repository & Cấu trúc Thư mục (Repository Architecture & Layout)
 
-### 6.1. Quyết định Kiến trúc Repository (Architectural Decision Records - ADR)
-
-*   **ADR-01: Lựa chọn Mô hình Monorepo thay vì Multi-repo**
-    *   **Bối cảnh:** Dự án được phát triển bởi nhóm **2 kỹ sư phần mềm**, bao gồm hệ thống Core Backend (Java Monolith - Spring Boot), Frontend Web Client (ReactJS), cơ sở dữ liệu quan hệ kết hợp Vector Database và hệ thống Rule Engine.
-    *   **Quyết định:** Sử dụng mô hình **Monorepo** duy nhất chứa cả `backend/`, `frontend/`, `docker/`, `scripts/` và `docs/`.
-    *   **Lý do & Lợi ích:**
-        1.  *Đồng bộ hóa phiên bản:* Thay đổi DTO backend và Type interface frontend diễn ra trong cùng một commit/PR, triệt tiêu nguy cơ "vỡ hợp đồng API" (API Contract drift).
-        2.  *Tối ưu hóa quy trình làm việc cho nhóm 2 người:* Không phải quản lý nhiều repo, issue tracker rời rạc; dễ dàng review chéo (Dev 1 review logic của Dev 2 và ngược lại).
-        3.  *Môi trường cục bộ đồng nhất:* 1 câu lệnh `docker compose up -d` là khởi chạy được toàn bộ hệ sinh thái (Database MySQL + Redis + Mailhog + Backend + Frontend).
-        4.  *Tích hợp CI/CD tinh gọn:* Sử dụng GitHub Actions path-filtering (`paths: ['backend/**']` và `paths: ['frontend/**']`) giúp chạy test độc lập nhưng quản lý pipeline tập trung.
-
-*   **ADR-02: Lựa chọn MySQL 8.0 làm Cơ sở Dữ liệu Quan hệ Chính**
-    *   **Bối cảnh:** Hệ thống cần hệ quản trị RDBMS phổ biến, ổn định để xử lý ACID transaction cho Đơn hàng, Giỏ hàng, Quản lý Người dùng, Tập luật tương thích và Lưu trữ thông số sản phẩm dưới dạng JSON.
-    *   **Quyết định:** Sử dụng MySQL 8.0 với InnoDB engine và trường kiểu `JSON` cho specs phần cứng, vector embeddings.
-    *   **Lý do & Lợi ích:**
-        1.  *Đơn giản hóa & Phổ biến:* MySQL 8.0 thân thiện, tài liệu phong phú, hỗ trợ native kiểu dữ liệu JSON, UUID expressions và transaction cách ly cao.
-        2.  *Hiệu suất & Đồng bộ:* Bảng `product_embeddings` liên kết khóa ngoại trực tiếp `REFERENCES products(product_id) ON DELETE CASCADE`.
-        3.  *Hỗ trợ JSON Native:* MySQL 8 cung cấp hàm JSON phong phú (`JSON_EXTRACT`, `->`, `->>`) phù hợp cho các trường specs phần cứng linh hoạt.
-
-*   **ADR-03: Hardware Rule Engine nội bộ với Caffeine Cache & CompletableFuture**
-    *   **Bối cảnh:** Luồng PC Builder và Checkout yêu cầu kiểm tra tương thích liên tục khi người dùng thao tác. Độ trễ yêu cầu `< 2ms` và không được nghẽn CPU khi có nhiều luật.
-    *   **Quyết định:**
-        - Nhúng Rule Engine thành một **Internal Module** trong Spring Boot.
-        - Sử dụng **Caffeine In-Memory Cache** lưu danh sách quy tắc đang active (`@Cacheable("compat_rules")`).
-        - Sử dụng `CompletableFuture.supplyAsync()` phân bổ các nhóm quy tắc (CPU-Main, RAM-Main, GPU-Case, PSU-TDP) chạy song song trên Thread Pool riêng biệt (`ruleEngineExecutor`).
-
-### 6.2. Cấu trúc Cây Thư mục Toàn diện (Full Directory Tree)
-
 ```text
 project1/
 ├── .github/
@@ -1198,6 +1170,7 @@ project1/
 │   └── REPO_DESIGN.md
 ├── .gitignore
 └── README.md
+```
 
 ## 7. Cấu trúc Phân rã Công việc (WBS) theo Chức năng
 
