@@ -95,14 +95,20 @@ flowchart TD
 │   └── mysql/
 │       └── init.sql                 # Khởi tạo database smartpc_db
 ├── docs/
+│   ├── detail-design/               # Tài liệu Thiết kế chi tiết (Detailed Design - DD)
+│   │   ├── dd-uc6-core-rule-engine.md # DD Core Rule Engine & Quản lý Tập luật (UC6)
+│   │   └── dd-java-runtime-upgrade.md # DD Nâng cấp Java Runtime lên Java 25 LTS
 │   ├── screens/                     # Toàn bộ ảnh mockup giao diện (screen0.png -> screen6.png)
+│   ├── stitch_prompts.md            # Bộ prompt UI Stitch tương ứng screen0 -> screen6
 │   └── REPO_DESIGN.md               # Bản thiết kế chi tiết kiến trúc repository
 ├── scripts/
 │   └── seed-compat-rules.sql        # 10 tập luật tương thích phần cứng mẫu
 ├── docker-compose.yml               # Khởi chạy full-stack 1-click
 ├── .gitignore
-├── prj1.md                          # Tài liệu đặc tả yêu cầu và thiết kế chi tiết
-└── stitch_prompts.md                # Bộ prompt UI Stitch tương ứng screen0 -> screen6
+├── AGENTS.md                        # Quy định bắt buộc cho AI Agent (DD-First Rule)
+├── GEMINI.md                        # Cấu hình chỉ dẫn AI Agent
+├── README.md                        # Hướng dẫn dự án & khởi chạy
+└── sdd.md                           # Tài liệu thiết kế kiến trúc toàn diện hệ thống
 ```
 
 ---
@@ -128,13 +134,14 @@ docker compose up -d
 ```
 
 ### Cách 2: Khởi chạy thủ công cho Môi trường Phát triển (Local Dev)
+Yêu cầu: Đã cài đặt **JDK 25 LTS**, **Maven 3.9+**, và **Node.js 20+**.
 
 #### Bước 1: Chạy Database & Redis qua Docker
 ```bash
 docker compose up -d mysql redis mailhog
 ```
 
-#### Bước 2: Chạy Backend (Spring Boot)
+#### Bước 2: Chạy Backend (Spring Boot 3.5 + Java 25 LTS)
 ```bash
 cd backend
 mvn clean spring-boot:run

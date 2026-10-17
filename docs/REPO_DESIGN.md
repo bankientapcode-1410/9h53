@@ -154,12 +154,17 @@ project1/
 ├── scripts/
 │   └── seed-compat-rules.sql
 ├── docs/
+│   ├── detail-design/                     # Tài liệu Thiết kế chi tiết (Detailed Design - DD)
+│   │   ├── dd-uc6-core-rule-engine.md     # DD cho Core Rule Engine & Quản lý Tập luật (UC6)
+│   │   └── dd-java-runtime-upgrade.md     # DD nâng cấp Java Runtime lên Java 25 LTS
 │   ├── screens/                           # Toàn bộ ảnh mockup UI (screen0.png -> screen6.png)
-│   ├── prj1.md
 │   ├── stitch_prompts.md
 │   └── REPO_DESIGN.md
 ├── .gitignore
-└── README.md
+├── AGENTS.md                              # Quy định bắt buộc cho AI Agent (DD-First Rule)
+├── GEMINI.md                              # Cấu hình chỉ dẫn AI Agent
+├── README.md
+└── sdd.md                                 # Tài liệu thiết kế kiến trúc toàn diện hệ thống
 ```
 
 ---
