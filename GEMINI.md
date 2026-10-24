@@ -87,6 +87,49 @@ flowchart TD
 4. **Bước 4 — Triển khai Code:** Chỉ bắt đầu viết code Java / React / SQL sau khi tài liệu DD đã hoàn thiện. Code phải tuân thủ đúng tên Class, Method, DTO, Endpoint, Error Code đã định nghĩa trong tài liệu DD.
 5. **Bước 5 — Kiểm thử:** Viết Unit Test bám sát các kịch bản kiểm thử (Test Cases) đã liệt kê ở Mục 8 của file DD.
 
+### 3.1. Lập Kế hoạch Triển khai khi Phát triển Trọn vẹn một UC (Implementation Plan)
+
+> [!IMPORTANT]
+> Khi yêu cầu của User là **triển khai toàn bộ một Use-Case / phân hệ** (VD: "làm UC2 PC Builder", "implement UC4"), AI Agent **BẮT BUỘC** phải lập **Kế hoạch Triển khai (Implementation Plan)** sau khi DD đã hoàn thiện và **trước khi viết code**. Tuyệt đối không triển khai cả UC trong một lượt code duy nhất.
+
+* **Vị trí lưu trữ:** `docs/implementation-plan/plan-<ma-usecase-hoac-ten-module>.md` (cùng hậu tố với file DD, VD: `dd-uc2-pc-builder.md` $\rightarrow$ `plan-uc2-pc-builder.md`).
+* **Nguồn phân rã:** Dùng **WBS tại mục `7. Cấu trúc Phân rã Công việc (WBS)` của [sdd.md](sdd.md)** làm khung. Mỗi nhánh lá của WBS trong UC tương ứng một **Work Package** mang mã `7.x.y` (khớp với mục `4. Thiết kế Chi tiết theo Tác vụ WBS` trong DD, VD: `7.4.1` $\rightarrow$ `7.4.5` của UC6).
+
+#### a) Quy tắc Phân rã Task (Decomposition Rules)
+
+1. **Cấp 1 — Work Package (`7.x.y`):** Lấy nguyên từ WBS trong `sdd.md`. Nếu WBS thiếu hạng mục cần thiết (VD: migration, seed data, config), bổ sung vào cả DD và WBS trước khi lập plan.
+2. **Cấp 2 — Task (`7.x.y.z`):** Bẻ mỗi Work Package thành các task nhỏ theo **tầng kiến trúc**, theo thứ tự phụ thuộc từ dưới lên:
+   1. `DB` — Flyway migration (DDL, index, seed) `V<n>__<mo_ta>.sql`
+   2. `ENTITY/REPO` — JPA Entity, Repository, Projection
+   3. `DOMAIN/SERVICE` — Service, Validator, Strategy, Exception & Error Code
+   4. `API` — Controller, Request/Response DTO, phân quyền Role
+   5. `FE` — API client, types, component/page, route (tuân thủ Mục 4 — Bright Header)
+   6. `TEST` — Unit Test / Integration Test theo mã Test Case trong Mục 8 của DD
+3. **Kích thước task:** Mỗi task phải **hoàn thành và kiểm chứng được độc lập** (build pass / test pass), chạm tới tối đa ~5 file hoặc một lớp/thành phần chính. Task lớn hơn phải tách tiếp.
+4. **Phụ thuộc tường minh:** Mỗi task khai báo `Depends on` (mã task khác hoặc UC khác, VD: UC2 phụ thuộc Rule Engine `7.4.*` của UC6). Không bắt đầu task khi phụ thuộc chưa xong.
+5. **Truy vết DD:** Mỗi task phải tham chiếu tới mục cụ thể trong DD (tên Class/Method, Endpoint, Error Code, Test Case ID). Task không truy vết được về DD $\rightarrow$ cập nhật DD trước.
+
+#### b) Cấu trúc Chuẩn của File Plan
+
+1. **Header:** Mã plan (VD: `PLAN-UC2-PC-BUILDER`), link DD tương ứng, UC & mã WBS `7.x`, trạng thái tổng.
+2. **Sơ đồ phụ thuộc (Mermaid `flowchart LR`)** giữa các Work Package / Task.
+3. **Bảng Task:**
+
+   | Mã Task | Work Package | Tầng | Mô tả | File/Class tác động | Tham chiếu DD | Depends on | Tiêu chí hoàn thành (DoD) | Trạng thái |
+   |---|---|---|---|---|---|---|---|---|
+   | `7.5.2.1` | 7.5.2 Gọi Rule Engine check tương thích | `SERVICE` | Tạo `BuildCompatibilityService.check()` | `BuildCompatibilityService.java` | DD §4.2 | `7.4.3.*` | Unit test `TC-UC2-05..08` pass | `TODO` |
+
+   * Trạng thái dùng: `TODO` / `IN_PROGRESS` / `DONE` / `BLOCKED` (ghi rõ lý do).
+4. **Thứ tự thực thi (Milestones):** Nhóm task thành các mốc có thể demo được (VD: M1 — Backend API chạy được với Postman; M2 — FE tích hợp; M3 — Test đầy đủ).
+5. **Rủi ro & Câu hỏi mở:** Các điểm chưa rõ cần User quyết định.
+
+#### c) Quy trình Thực thi theo Plan
+
+1. Trình bày plan cho User xác nhận trước khi code (cùng lúc với tóm tắt DD ở Bước 5 của flowchart).
+2. Thực hiện **tuần tự từng task**; sau mỗi task: build/test, cập nhật cột `Trạng thái` trong file plan.
+3. Nếu phát hiện sai lệch khi code $\rightarrow$ dừng, cập nhật DD + plan, rồi mới tiếp tục (giữ nguyên nguyên tắc DD-FIRST).
+4. Kết thúc UC: mọi task `DONE`, toàn bộ Test Case trong Mục 8 của DD pass, cập nhật liên kết plan vào [sdd.md](sdd.md) cạnh liên kết DD.
+
 ---
 
 ## 4. Quy chuẩn Thiết kế Giao diện Header Toàn Cục (Frontend Header Design Rule)
