@@ -10,8 +10,21 @@ export function useProductFilter() {
     const category = searchParams.get('category') || undefined;
     const brandParam = searchParams.get('brand');
     const brand = brandParam ? brandParam.split(',').filter(Boolean) : undefined;
-    const minPrice = searchParams.get('min_price') ? Number(searchParams.get('min_price')) : undefined;
-    const maxPrice = searchParams.get('max_price') ? Number(searchParams.get('max_price')) : undefined;
+
+    const rawMin = searchParams.get('min_price');
+    const parsedMin = rawMin ? Number(rawMin) : undefined;
+    const minPrice =
+      parsedMin !== undefined && parsedMin > 0 && Number.isFinite(parsedMin)
+        ? parsedMin
+        : undefined;
+
+    const rawMax = searchParams.get('max_price');
+    const parsedMax = rawMax ? Number(rawMax) : undefined;
+    const maxPrice =
+      parsedMax !== undefined && parsedMax < 999999999 && Number.isFinite(parsedMax)
+        ? parsedMax
+        : undefined;
+
     const sort = (searchParams.get('sort') as any) || 'newest';
     const page = searchParams.get('page') ? Number(searchParams.get('page')) : 0;
     const size = searchParams.get('size') ? Number(searchParams.get('size')) : 12;
@@ -69,7 +82,7 @@ export function useProductFilter() {
         current.set('category', catCode);
       }
       const sort = searchParams.get('sort');
-      if (sort) current.set('sort', sort);
+      if (sort && sort !== 'newest') current.set('sort', sort);
       const search = searchParams.get('search');
       if (search) current.set('search', search);
 
@@ -80,6 +93,10 @@ export function useProductFilter() {
 
   const toggleBrand = useCallback(
     (brandName: string) => {
+      if (!brandName) {
+        updateParams({ brand: null });
+        return;
+      }
       const currentBrands = Array.isArray(filters.brand) ? [...filters.brand] : [];
       const index = currentBrands.findIndex((b) => b.toUpperCase() === brandName.toUpperCase());
 
@@ -96,8 +113,18 @@ export function useProductFilter() {
     [filters.brand, updateParams]
   );
 
+  const clearBrands = useCallback(() => {
+    updateParams({ brand: null });
+  }, [updateParams]);
+
   const toggleSpec = useCallback(
     (specKey: string, value: string) => {
+      const paramKey = `specs[${specKey}]`;
+      if (!value) {
+        updateParams({ [paramKey]: null });
+        return;
+      }
+
       const currentSpecs = { ...(filters.specs || {}) };
       const currentVal = currentSpecs[specKey] !== undefined ? String(currentSpecs[specKey]) : '';
       const values = currentVal ? currentVal.split(',').filter(Boolean) : [];
@@ -109,7 +136,6 @@ export function useProductFilter() {
         values.push(value);
       }
 
-      const paramKey = `specs[${specKey}]`;
       if (values.length > 0) {
         updateParams({ [paramKey]: values.join(',') });
       } else {
@@ -119,11 +145,22 @@ export function useProductFilter() {
     [filters.specs, updateParams]
   );
 
+  const clearSpec = useCallback(
+    (specKey: string) => {
+      updateParams({ [`specs[${specKey}]`]: null });
+    },
+    [updateParams]
+  );
+
   const setPriceRange = useCallback(
     (min?: number, max?: number) => {
+      const validMin =
+        min !== undefined && min > 0 && Number.isFinite(min) ? String(min) : null;
+      const validMax =
+        max !== undefined && max < 999999999 && Number.isFinite(max) ? String(max) : null;
       updateParams({
-        min_price: min !== undefined ? String(min) : null,
-        max_price: max !== undefined ? String(max) : null,
+        min_price: validMin,
+        max_price: validMax,
       });
     },
     [updateParams]
@@ -131,7 +168,7 @@ export function useProductFilter() {
 
   const setSort = useCallback(
     (sort: 'newest' | 'price_asc' | 'price_desc' | 'benchmark_desc') => {
-      updateParams({ sort }, false);
+      updateParams({ sort: sort === 'newest' ? null : sort }, false);
     },
     [updateParams]
   );
@@ -160,7 +197,9 @@ export function useProductFilter() {
     filters,
     setCategory,
     toggleBrand,
+    clearBrands,
     toggleSpec,
+    clearSpec,
     setPriceRange,
     setSort,
     setPage,

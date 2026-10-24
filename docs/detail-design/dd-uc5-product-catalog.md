@@ -840,9 +840,35 @@ Bám sát bộ màn hình mẫu trong `docs/screens/screen0.png` $\rightarrow$ `
 #### A. Giao diện Duyệt Danh mục (`CategoryBrowsePage.tsx`)
 Bám sát mockup `docs/screens/screen1.png` và `docs/screens/screen3.png`:
 0. **Banner Đầu trang Sáng (Bright Hero / Search Header Banner):** Sử dụng nền chuyển sắc sáng ấm & xanh dịu (`bg-gradient-to-r from-[#FFFDF7] via-[#F9F5EB] to-[#EFF6FF] border border-amber-200/60 text-smart-navy shadow-sm`) như banner đầu trang `docs/screens/screen1.png`, kết hợp các thẻ điểm mạnh nền trắng (`bg-white border border-slate-200/80`) và ô tìm kiếm nền trắng sáng.
-1. **Quick Chips:** Sinh động từ `GET /api/v1/products/facets?category=<code>` (chỉ hiện giá trị thực sự có sản phẩm đang bán).
-   * *Ví dụ GPU:* `[Tất cả]`, `[NVIDIA]`, `[AMD]`, `[VRAM 8GB]`, `[VRAM 12GB]`, `[VRAM 16GB]`, `[Dưới 5 triệu]`, `[5 - 10 triệu]`, `[Trên 10 triệu]`.
-   * Chips cùng nhóm (brand) là phép **OR**; khác nhóm là phép **AND**.
+1. **Bộ lọc nhanh (Quick Chips - `QuickChipsFilterBar.tsx`):**
+   * **Bố cục 2 Box Tinh gọn trên cùng một hàng (Compact & Space-Efficient Dual-Box Layout):**
+     * Thiết kế vừa vặn nội dung, loại bỏ hoàn toàn các khoảng trắng dư thừa và viền phân cách rườm rà.
+     * Cả 2 nhóm **"Thương hiệu phổ biến"** và **"Khoảng giá"** được tách thành 2 box nền trắng riêng biệt trên cùng một hàng (`grid grid-cols-1 lg:grid-cols-2 gap-3`).
+     * **Quy chuẩn Tinh gọn (Space-Efficient Design):**
+       * Padding vừa khít (`p-3 md:p-3.5 rounded-xl border border-slate-200/80 bg-white shadow-2xs`), không dùng padding lớn `p-5` gây phình to.
+       * Header mỗi box được tích hợp tinh tế, gọn nhẹ: icon và tiêu đề chữ đậm (`text-xs font-bold text-slate-700`) kèm huy hiệu chọn lọc, không có dòng kẻ gạch ngang `border-b` phân cách tốn diện tích dọc.
+       * Nút chip bo góc mềm (`rounded-lg px-2.5 py-1 text-xs font-medium`), vừa vặn nội dung text và icon check, khoảng cách `gap-1.5`.
+     * **Bỏ phần mô tả văn bản:** Tuyệt đối không hiển thị dòng mô tả tĩnh `| Cùng nhóm: OR • Khác nhóm: AND` trên thanh tiêu đề để giao diện tối giản, hiện đại và sạch sẽ.
+     * **Box 1 — Thương hiệu phổ biến (Brand Box):**
+       * Tiêu đề: Icon `Tag` + `Thương hiệu phổ biến` (kèm badge số lượng đang chọn nếu có, ví dụ `2 đã chọn`).
+       * Nút `Tất cả` (active `bg-slate-900 text-white` khi `activeBrands.length === 0`) và danh sách chip thương hiệu sinh động từ `GET /api/v1/products/facets`.
+       * Hỗ trợ chọn nhiều thương hiệu cùng lúc (Multi-select), mỗi chip active có icon `Check` và nền xanh `bg-smart-blue text-white`.
+       * Khi đang chọn một hoặc nhiều thương hiệu và bấm nút `Tất cả`, hệ thống gọi trực tiếp `onClearBrands()` (xóa nguyên tử tham số `brand` khỏi URL trong 1 lần cập nhật state, tuyệt đối không gọi `forEach(onToggleBrand)` gây lỗi stale closure chỉ xóa brand cuối cùng), toàn bộ các brand cụ thể được bỏ chọn và nút `Tất cả` sáng màu trở lại.
+     * **Box 2 — Khoảng giá (Price Range Box):**
+       * Tiêu đề: Icon `Coins` + `Khoảng giá` (kèm hiển thị trạng thái đang lọc giá nếu có).
+       * Nút `Tất cả mức giá` (active khi không lọc giá) và các chip khoảng giá chuẩn: `Dưới 5 triệu` (chỉ đặt `max_price=5000000`), `5 - 15 triệu` (`min_price=5000000&max_price=15000000`), `Trên 15 triệu` (chỉ đặt `min_price=15000000`)...
+       * Click để chọn một khoảng giá, click lại chip đang active để hủy chọn (toggle về Tất cả).
+     * **Nhóm Chips Thông số Mở rộng (Spec Chips - nếu có):** Được xếp ngay hàng bên dưới dạng các dòng chip bổ sung hoặc card phụ đầy đủ độ rộng, cùng quy chuẩn tinh gọn. Nút `Tất cả` của từng nhóm spec gọi `onClearSpec(group.code)` để xóa nguyên tử `specs[<key>]` khỏi URL.
+     * **Nút Xóa bộ lọc (`RotateCcw`):** Tích hợp ở góc trên bên phải thanh Quick Chips khi có bất kỳ tiêu chí lọc nào đang kích hoạt (`activeBrands > 0` hoặc có dải giá hoặc specs).
+   * **Tối ưu Rút gọn URL & REST API Query String (`useProductFilter.ts` & `productService.ts`):**
+     * Loại bỏ hoàn toàn các tham số mặc định hoặc dư thừa trên cả thanh địa chỉ trình duyệt và khi gọi `GET /api/v1/products`:
+       * Không gửi `page` khi `page = 0`; không gửi `size` khi `size = 12`; không gửi `sort` khi `sort = 'newest'`.
+       * Không gửi `min_price` khi `min_price <= 0` hoặc `undefined` (VD: chọn *"Dưới 5 triệu"* chỉ truyền `?max_price=5000000`).
+       * Không gửi `max_price` khi `max_price >= 999999999` / không giới hạn cận trên (VD: chọn *"Trên 15 triệu"* chỉ truyền `?min_price=15000000`).
+       * Khi bấm `Tất cả` ở hộp Thương hiệu, xóa hẳn tham số `brand` khỏi URL/API.
+   * **Nguyên tắc Logic Lọc Dữ liệu (Filtering Logic):**
+     * **Cùng nhóm (Intra-group): Phép toán OR.** Khi chọn nhiều giá trị trong cùng một nhóm (ví dụ chọn nhiều thương hiệu ASUS, MSI), hệ thống truy vấn các sản phẩm thỏa mãn `brand = 'ASUS' OR brand = 'MSI'` (tương đương `brand IN ('ASUS', 'MSI')`).
+     * **Khác nhóm (Inter-group): Phép toán AND.** Khi kết hợp giữa các nhóm tiêu chí khác nhau (Thương hiệu, Khoảng giá, và các Thông số kỹ thuật Specs), hệ thống truy vấn các sản phẩm thỏa mãn đồng thời: `(Brand OR ...) AND (Price >= min AND Price <= max) AND (Specs match)`.
 2. **Toolbar & Sắp xếp:** Tổng số sản phẩm (VD: *"Tìm thấy 48 card đồ họa"*); Dropdown: `newest` (Mới nhất), `price_asc`, `price_desc`, `benchmark_desc` (Hiệu năng cao nhất).
 3. **Lưới 4 cột (`ProductGrid.tsx` & `ProductCard.tsx`):** Ảnh 1:1, tên sản phẩm cố định chiều cao 2 dòng (`block line-clamp-2 min-h-[2.5rem]`) để các dãy tag `key_specs` trên cùng hàng luôn thẳng hàng ngang, các tag `key_specs` (trích tối đa 4 trường theo thứ tự ưu tiên `filterable` rồi tới các trường trong `CategorySpecSchemaRegistry`), giá, nhãn `HẾT HÀNG` khi `in_stock = false`.
    * **Quy chuẩn hiển thị & căn chỉnh `key_specs` trên `ProductCard.tsx`:**
@@ -1306,6 +1332,7 @@ Thư mục test: `backend/src/test/java/com/smartpc/modules/product/`. Integrati
 | **`TC-PROD-20`** | Integration | Trừ kho nguyên tử | 2 luồng đồng thời `decreaseStock(id, 1)` khi tồn = 1 | Đúng 1 luồng thành công, luồng còn lại `PROD_OUT_OF_STOCK`; tồn kho cuối = 0 |
 | **`TC-PROD-21`** | Integration | Soft delete | `DELETE /admin/products/{id}` với SP đã có trong `order_details` | `204`; `deleted_at` có giá trị; embedding & `cart_items` bị xóa; `GET /products/{id}` $\rightarrow$ `404` |
 | **`TC-PROD-22`** | Integration | Cache danh sách bị vô hiệu khi sửa SP | Gọi `GET /products?category=GPU` (cache), sửa giá 1 SP, gọi lại | Lần 2 trả giá mới (namespace `prodlist:ns` đã tăng) |
+| **`TC-PROD-23`** | Frontend / Unit | Bộ lọc Quick Chips 2 box, nút `Tất cả` & Rút gọn Query API | Render `QuickChipsFilterBar` với facets Brand & Price; chọn đồng thời 2 brands ASUS, MSI rồi bấm `Tất cả`; chọn dải giá "Dưới 5 triệu" / "Trên 15 triệu" | Hiển thị 2 box riêng biệt cùng 1 hàng; khi bấm `Tất cả` xóa sạch toàn bộ brand đã chọn (`activeBrands = []`) và tô màu nút `Tất cả`; URL & API rút gọn không chứa tham số mặc định (`page=0`, `size=12`, `sort=newest`, `min_price=0`, `max_price=999999999`) |
 
 ---
 

@@ -16,26 +16,46 @@ export const productService = {
    */
   async getProducts(criteria: ProductFilterCriteria): Promise<ApiResponse<PageResponse<ProductSummaryDTO>>> {
     try {
-      const params = new URLSearchParams();
+      const params: Record<string, string> = {};
 
-      if (criteria.category) params.append('category', criteria.category);
+      if (criteria.category) params.category = criteria.category;
       if (criteria.brand) {
-        const brands = Array.isArray(criteria.brand) ? criteria.brand.join(',') : criteria.brand;
-        if (brands) params.append('brand', brands);
+        const brands = Array.isArray(criteria.brand)
+          ? criteria.brand.filter(Boolean).join(',')
+          : criteria.brand;
+        if (brands) params.brand = brands;
       }
-      if (criteria.min_price !== undefined) params.append('min_price', String(criteria.min_price));
-      if (criteria.max_price !== undefined) params.append('max_price', String(criteria.max_price));
-      if (criteria.sort) params.append('sort', criteria.sort);
-      if (criteria.page !== undefined) params.append('page', String(criteria.page));
-      if (criteria.size !== undefined) params.append('size', String(criteria.size));
-      if (criteria.search) params.append('search', criteria.search);
+      if (criteria.min_price !== undefined && criteria.min_price > 0) {
+        params.min_price = String(criteria.min_price);
+      }
+      if (
+        criteria.max_price !== undefined &&
+        criteria.max_price < 999999999 &&
+        Number.isFinite(criteria.max_price)
+      ) {
+        params.max_price = String(criteria.max_price);
+      }
+      if (criteria.sort && criteria.sort !== 'newest') {
+        params.sort = criteria.sort;
+      }
+      if (criteria.page !== undefined && criteria.page > 0) {
+        params.page = String(criteria.page);
+      }
+      if (criteria.size !== undefined && criteria.size !== 12) {
+        params.size = String(criteria.size);
+      }
+      if (criteria.search && criteria.search.trim()) {
+        params.search = criteria.search.trim();
+      }
 
       // Serialize specs[key]
       if (criteria.specs) {
         Object.entries(criteria.specs).forEach(([key, val]) => {
           if (val !== undefined && val !== null && val !== '') {
             const strVal = Array.isArray(val) ? val.join(',') : String(val);
-            params.append(`specs[${key}]`, strVal);
+            if (strVal) {
+              params[`specs[${key}]`] = strVal;
+            }
           }
         });
       }

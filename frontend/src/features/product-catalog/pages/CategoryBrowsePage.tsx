@@ -22,7 +22,9 @@ export const CategoryBrowsePage: React.FC = () => {
     filters,
     setCategory,
     toggleBrand,
+    clearBrands,
     toggleSpec,
+    clearSpec,
     setPriceRange,
     setSort,
     setPage,
@@ -196,7 +198,9 @@ export const CategoryBrowsePage: React.FC = () => {
         minPrice={filters.min_price}
         maxPrice={filters.max_price}
         onToggleBrand={toggleBrand}
+        onClearBrands={clearBrands}
         onToggleSpec={toggleSpec}
+        onClearSpec={clearSpec}
         onSetPriceRange={setPriceRange}
         onResetFilters={resetFilters}
       />
