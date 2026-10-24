@@ -911,7 +911,9 @@ sequenceDiagram
 
 > **Tài liệu Thiết kế Chi tiết (Detailed Design - DD) theo từng phân hệ:**
 > * **Core Rule Engine - Quản lý Tập luật (UC6):** [docs/detail-design/dd-uc6-core-rule-engine.md](docs/detail-design/dd-uc6-core-rule-engine.md)
+> * **Quản lý Sản phẩm & Danh mục (UC1a, UC5):** [docs/detail-design/dd-uc5-product-catalog.md](docs/detail-design/dd-uc5-product-catalog.md)
 > * **Java Runtime Upgrade (Java 25 LTS):** [docs/detail-design/dd-java-runtime-upgrade.md](docs/detail-design/dd-java-runtime-upgrade.md)
+> * **Local Dev & Demo Automation Script:** [docs/detail-design/dd-local-dev-automation.md](docs/detail-design/dd-local-dev-automation.md)
 
 ## 5. Thiết kế giao diện người dùng (UI/UX)
 
@@ -1050,136 +1052,16 @@ flowchart TD
 
 ```text
 project1/
-├── .github/
-│   ├── workflows/
-│   │   ├── backend-ci.yml                 # Maven build, JUnit test, Testcontainers
-│   │   └── frontend-ci.yml                # NPM build, TypeScript check, Lint
-│   └── pull_request_template.md           # Template kiểm tra chất lượng code PR
-├── backend/                               # Spring Boot 3.5.x + Java 25 LTS
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/smartpc/
-│   │   │   │   ├── SmartPcApplication.java
-│   │   │   │   ├── common/                # Các thành phần dùng chung toàn hệ thống
-│   │   │   │   │   ├── exception/         # Custom exceptions & GlobalExceptionHandler
-│   │   │   │   │   ├── response/          # ApiResponse<T>, PageResponse<T>
-│   │   │   │   │   ├── entity/            # BaseAuditEntity (created_at, updated_at)
-│   │   │   │   │   └── util/              # JsonUtil, CurrencyUtil
-│   │   │   │   ├── config/                # Cấu hình Spring Context
-│   │   │   │   │   ├── SecurityConfig.java
-│   │   │   │   │   ├── CorsConfig.java
-│   │   │   │   │   ├── CacheConfig.java   # Cấu hình Caffeine Cache
-│   │   │   │   │   ├── AsyncConfig.java   # Thread pool cho Rule Engine & Async Tasks
-│   │   │   │   │   └── SpringAiConfig.java # Vertex AI Gemini & Vector Search bean
-│   │   │   │   ├── security/              # Tầng bảo mật & phân quyền
-│   │   │   │   │   ├── JwtTokenProvider.java
-│   │   │   │   │   ├── JwtAuthenticationFilter.java
-│   │   │   │   │   ├── UserDetailsServiceImpl.java
-│   │   │   │   │   └── OAuth2SuccessHandler.java
-│   │   │   │   └── modules/               # Phân rã tính năng theo domain
-│   │   │   │       ├── auth/              # UC0: Đăng ký, Đăng nhập, Quên mật khẩu
-│   │   │   │       │   ├── controller/AuthController.java
-│   │   │   │       │   ├── service/AuthService.java
-│   │   │   │       │   └── dto/AuthRequests.java
-│   │   │   │       ├── product/           # UC1a, UC5: Quản lý Linh kiện & JSON Specs
-│   │   │   │       │   ├── controller/ProductController.java
-│   │   │   │       │   ├── service/ProductService.java
-│   │   │   │       │   ├── repository/ProductRepository.java
-│   │   │   │       │   └── entity/Product.java, Category.java
-│   │   │   │       ├── ruleengine/        # UC6: Hardware Rule Engine & Cache
-│   │   │   │       │   ├── controller/CompatRuleAdminController.java
-│   │   │   │       │   ├── service/CompatibilityService.java
-│   │   │   │       │   ├── evaluator/RuleEvaluator.java
-│   │   │   │       │   ├── calculator/AggregateCalculator.java
-│   │   │   │       │   ├── strategy/OperatorStrategy.java
-│   │   │   │       │   ├── model/RuleSeverity.java, RuleOperator.java
-│   │   │   │       │   └── dto/CompatibilityResult.java
-│   │   │   │       ├── pcbuilder/         # UC2: PC Builder & Real-time Check
-│   │   │   │       │   ├── controller/PCBuilderController.java
-│   │   │   │       │   └── service/PCBuilderService.java
-│   │   │   │       ├── pcprofile/         # UC3: Hồ sơ PC, Bottleneck & Nâng cấp
-│   │   │   │       │   ├── controller/PCProfileController.java
-│   │   │   │       │   ├── service/PCProfileService.java
-│   │   │   │       │   └── entity/PCProfile.java, ProfileComponent.java
-│   │   │   │       ├── ai/                # UC1, UC3: Gemini LLM & Vector Search
-│   │   │   │       │   ├── controller/AISearchController.java
-│   │   │   │       │   ├── service/AISearchService.java
-│   │   │   │       │   ├── service/GeminiReasoningService.java
-│   │   │   │       │   └── parser/IntentParser.java
-│   │   │   │       ├── cart/              # UC4: Giỏ hàng
-│   │   │   │       │   ├── controller/CartController.java
-│   │   │   │       │   ├── service/CartService.java
-│   │   │   │       │   └── entity/Cart.java, CartItem.java
-│   │   │   │       ├── order/             # UC4, UC7: Thanh toán ACID & Quản trị đơn
-│   │   │   │       │   ├── controller/OrderController.java
-│   │   │   │       │   ├── service/OrderService.java
-│   │   │   │       │   └── entity/Order.java, OrderDetail.java
-│   │   │   │       └── dashboard/         # UC8: Thống kê & Báo cáo
-│   │   │   │           ├── controller/DashboardController.java
-│   │   │   │           └── service/DashboardService.java
-│   │   │   └── resources/
-│   │   │       ├── application.yml
-│   │   │       ├── application-dev.yml
-│   │   │       └── db/migration/          # Flyway Database Scripts
-│   │   │           ├── V1__init_schema.sql
-│   │   │           └── V2__seed_rules.sql
-│   │   └── test/                          # Unit & Integration Tests
-│   │       └── java/com/smartpc/
-│   │           ├── ruleengine/RuleEngineBenchmarkTest.java
-│   │           └── order/CheckoutTransactionTest.java
-│   ├── pom.xml
-│   └── Dockerfile
-├── frontend/                              # React 18 + Vite + TailwindCSS
-│   ├── src/
-│   │   ├── assets/                        # Logo, biểu tượng, hình ảnh
-│   │   ├── components/                    # Atomic Reusable Components
-│   │   │   ├── ui/                        # Button, Input, Modal, Badge, Card, Select
-│   │   │   ├── layout/                    # Header, Footer, AdminSidebar
-│   │   │   └── feedback/                  # RuleAlertBanner, AIThinkingIndicator
-│   │   ├── features/                      # Chức năng nghiệp vụ
-│   │   │   ├── auth/                      # Screen 0: Login, Register modal
-│   │   │   ├── home/                      # Screen 1: Trang chủ SmartPC
-│   │   │   ├── ai-search/                 # Screen 2a, 2b, 2c: Giao diện AI Search & Fallback
-│   │   │   ├── product-detail/            # Screen 3: Chi tiết SP & Mini Compat Checker
-│   │   │   ├── pc-builder/                # Screen 4: 8-slot PC Builder & Rule Diagnostics
-│   │   │   ├── cart/                      # Screen 5a: Giỏ hàng & cảnh báo ẩn
-│   │   │   ├── checkout/                  # Screen 5b, 5c: One-page checkout & xác nhận đơn
-│   │   │   ├── pc-profile/                # Screen 6: PC Profile & Lộ trình nâng cấp AI
-│   │   │   └── admin/                     # Quản lý SP, Đơn hàng, Luật, Dashboard KPI
-│   │   ├── services/                      # Axios API clients
-│   │   ├── stores/                        # Zustand Global State
-│   │   │   ├── useAuthStore.ts
-│   │   │   ├── useCartStore.ts
-│   │   │   └── usePCBuilderStore.ts
-│   │   ├── types/                         # TypeScript interfaces
-│   │   │   └── index.ts
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── index.css
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── tailwind.config.js
-│   ├── nginx.conf
-│   └── Dockerfile
-├── docker/
-│   ├── docker-compose.yml
-│   └── mysql/
-│       └── init.sql
-├── scripts/
-│   └── seed-compat-rules.sql
-├── docs/
-│   ├── detail-design/                     # Tài liệu Thiết kế chi tiết (Detailed Design - DD)
-│   │   ├── dd-uc6-core-rule-engine.md     # DD cho Core Rule Engine & Quản lý Tập luật (UC6)
-│   │   └── dd-java-runtime-upgrade.md     # DD nâng cấp Java Runtime lên Java 25 LTS
-│   ├── screens/                           # Toàn bộ ảnh mockup UI (screen0.png -> screen6.png)
-│   ├── stitch_prompts.md
-│   └── REPO_DESIGN.md
-├── .gitignore
-├── AGENTS.md                              # Quy định bắt buộc cho AI Agent (DD-First Rule)
-├── GEMINI.md                              # Cấu hình chỉ dẫn AI Agent
-├── README.md
-└── sdd.md                                 # Tài liệu thiết kế kiến trúc toàn diện hệ thống
+├── .github/          # Cấu hình CI/CD workflows (GitHub Actions tự động build & test) và template Pull Request
+├── backend/          # Mã nguồn Core Backend (Spring Boot 3.5.x + Java 25 LTS): Toàn bộ REST API, Spring Security, các module nghiệp vụ (Auth, Product, Rule Engine, PC Builder, PC Profile, AI, Cart, Order, Dashboard), Flyway DB migrations và bộ kiểm thử (Unit & Integration Tests)
+├── frontend/         # Mã nguồn Web Frontend (React 18 + Vite + TailwindCSS): Giao diện Storefront người dùng, PC Builder, Admin Portal, atomic components, Zustand state stores và kết nối Axios API
+├── docker/           # Cấu hình container hóa và Docker Compose cho môi trường phát triển cục bộ (MySQL 8.0, Redis...)
+├── scripts/          # Kịch bản tự động hóa Local Dev/Demo (dev.ps1) và script nạp dữ liệu mẫu khởi tạo (Seed data, tập luật tương thích)
+├── dev.cmd           # Wrapper khởi chạy nhanh môi trường Local Dev / Demo 1-click trên Windows
+└── docs/             # Tài liệu kỹ thuật dự án: Thư mục thiết kế chi tiết (docs/detail-design/), hình ảnh mockup giao diện (docs/screens/) và đặc tả kiến trúc
 ```
+
+> *Ghi chú: Bản thiết kế chi tiết phân rã từng file của Backend và Frontend được lưu trữ tại [docs/REPO_DESIGN.md](docs/REPO_DESIGN.md).*
 
 ## 7. Cấu trúc Phân rã Công việc (WBS) theo Chức năng
 
@@ -1188,69 +1070,63 @@ Dựa vào tài liệu đặc tả, dưới đây là WBS phân rã hệ thống
 ```text
 Nền tảng TMĐT Linh kiện Thông minh
 │
-├──── 7.0 Quản trị Nền tảng & Môi trường Runtime (Java 25 LTS)
-│     ├──── 7.0.1 Cấu hình Maven Compiler (Target Java 25 & Spring Boot 3.5.16)
-│     ├──── 7.0.2 Cấu hình Multi-stage Docker Build (Temurin 25 JDK & JRE Alpine)
-│     ├──── 7.0.3 Thiết lập GitHub Actions CI Pipeline (JDK 25 Temurin)
-│     └──── 7.0.4 Kiểm tra & Đồng bộ tài liệu thiết kế hệ thống (Java 25 LTS)
+├──── Quản lý Tài khoản & Xác thực (UC0, UC7)
+│     ├──── Thiết kế Database User, Phân quyền Role (Admin/User)
+│     ├──── Đăng ký/Đăng nhập bằng Email & Mật khẩu
+│     ├──── Đăng nhập qua mạng xã hội (Google, Facebook)
+│     ├──── Quản lý JWT Token/Session
+│     ├──── Quản lý trạng thái tài khoản (Admin khóa/mở tài khoản)
+│     ├──── Quản lý Quên mật khẩu & Khóa tạm thời khi sai mật khẩu 5 lần
+│     └──── Trang Quản lý Hồ sơ cá nhân & Lịch sử đơn hàng (User)
 │
-├──── 7.1 Quản lý Tài khoản & Xác thực (UC0, UC7)
-│     ├──── 7.1.1 Thiết kế Database User, Phân quyền Role (Admin/User)
-│     ├──── 7.1.2 Đăng ký/Đăng nhập bằng Email & Mật khẩu
-│     ├──── 7.1.3 Đăng nhập qua mạng xã hội (Google, Facebook)
-│     ├──── 7.1.4 Quản lý JWT Token/Session
-│     ├──── 7.1.5 Quản lý trạng thái tài khoản (Admin khóa/mở tài khoản)
-│     ├──── 7.1.6 Quản lý Quên mật khẩu & Khóa tạm thời khi sai mật khẩu 5 lần
-│     └──── 7.1.7 Trang Quản lý Hồ sơ cá nhân & Lịch sử đơn hàng (User)
+├──── Quản lý Sản phẩm & Danh mục (UC1a, UC5)
+│     ├──── Quản lý Cây danh mục (Category)
+│     ├──── Quản lý Thông tin cơ bản linh kiện (Tên, Ảnh, Giá, Tồn kho)
+│     ├──── Quản lý Thông số kỹ thuật động (Dynamic JSON Specs)
+│     ├──── Tự động đồng bộ Embedding Vector vào Vector DB khi lưu SP
+│     ├──── Trang danh sách & Duyệt sản phẩm theo danh mục (Frontend - UC1a)
+│     └──── Chức năng đồng bộ lại Vector DB thủ công (Manual Re-sync Vector)
 │
-├──── 7.2 Quản lý Sản phẩm & Danh mục (UC1a, UC5)
-│     ├──── 7.2.1 Quản lý Cây danh mục (Category)
-│     ├──── 7.2.2 Quản lý Thông tin cơ bản linh kiện (Tên, Ảnh, Giá, Tồn kho)
-│     ├──── 7.2.3 Quản lý Thông số kỹ thuật động (Dynamic JSON Specs)
-│     ├──── 7.2.4 Tự động đồng bộ Embedding Vector vào Vector DB khi lưu SP
-│     ├──── 7.2.5 Trang danh sách & Duyệt sản phẩm theo danh mục (Frontend - UC1a)
-│     └──── 7.2.6 Chức năng đồng bộ lại Vector DB thủ công (Manual Re-sync Vector)
+├──── Tìm kiếm Ngữ nghĩa & AI Chat (UC1)
+│     ├──── Giao diện Chat/Thanh tìm kiếm AI (Frontend)
+│     ├──── Tích hợp LLM để phân tích ý định (Intent Parsing)
+│     ├──── Truy vấn độ tương tự trong Vector DB (Similarity Search)
+│     ├──── AI suy luận, đánh giá sự phù hợp và tạo câu trả lời
+│     └──── Fallback sang tìm kiếm từ khóa ElasticSearch khi AI lỗi
 │
-├──── 7.3 Tìm kiếm Ngữ nghĩa & AI Chat (UC1)
-│     ├──── 7.3.1 Giao diện Chat/Thanh tìm kiếm AI (Frontend)
-│     ├──── 7.3.2 Tích hợp LLM để phân tích ý định (Intent Parsing)
-│     ├──── 7.3.3 Truy vấn độ tương tự trong Vector DB (Similarity Search)
-│     ├──── 7.3.4 AI suy luận, đánh giá sự phù hợp và tạo câu trả lời
-│     └──── 7.3.5 Fallback sang tìm kiếm từ khóa ElasticSearch khi AI lỗi
+├──── Core Rule Engine - Quản lý Tập luật (UC6)
+│     ├──── Quản lý Tập luật (Giao diện Admin Thêm/Sửa/Xóa Luật)
+│     ├──── Validate cấu trúc dữ liệu Luật (Source, Target, Spec_key, Operator)
+│     ├──── Xây dựng Evaluator xử lý phép toán (EQUALS, IN, LTE, GTE...)
+│     ├──── Xây dựng Aggregate Calculator (Tính tổng số RAM, tổng TDP...)
+│     └──── Tích hợp Hệ thống Cache In-Memory (Caffeine) cho Rules
 │
-├──── 7.4 Core Rule Engine - Quản lý Tập luật (UC6)
-│     ├──── 7.4.1 Quản lý Tập luật (Giao diện Admin Thêm/Sửa/Xóa Luật)
-│     ├──── 7.4.2 Validate cấu trúc dữ liệu Luật (Source, Target, Spec_key, Operator)
-│     ├──── 7.4.3 Xây dựng Evaluator xử lý phép toán (EQUALS, IN, LTE, GTE...)
-│     ├──── 7.4.4 Xây dựng Aggregate Calculator (Tính tổng số RAM, tổng TDP...)
-│     └──── 7.4.5 Tích hợp Hệ thống Cache In-Memory (Caffeine) cho Rules
+├──── Công cụ Xây dựng PC - PC Builder (UC2)
+│     ├──── Giao diện chọn linh kiện theo slot (CPU, Mainboard, RAM, GPU...)
+│     ├──── Xử lý gọi Rule Engine để check tương thích khi thêm món mới
+│     ├──── Hiển thị thông báo màu sắc theo mức độ (ERROR, WARNING)
+│     ├──── Thuật toán chặn/cảnh báo rủi ro khi có vi phạm xung đột
+│     ├──── Gợi ý linh kiện thay thế tương thích (Quick Fix Suggestions)
+│     └──── Chức năng đẩy toàn bộ cấu hình PC vào giỏ hàng
 │
-├──── 7.5 Công cụ Xây dựng PC - PC Builder (UC2)
-│     ├──── 7.5.1 Giao diện chọn linh kiện theo slot (CPU, Mainboard, RAM, GPU...)
-│     ├──── 7.5.2 Xử lý gọi Rule Engine để check tương thích khi thêm món mới
-│     ├──── 7.5.3 Hiển thị thông báo màu sắc theo mức độ (ERROR, WARNING)
-│     ├──── 7.5.4 Thuật toán chặn/cảnh báo rủi ro khi có vi phạm xung đột
-│     ├──── 7.5.5 Gợi ý linh kiện thay thế tương thích (Quick Fix Suggestions)
-│     └──── 7.5.6 Chức năng đẩy toàn bộ cấu hình PC vào giỏ hàng
+├──── Hồ sơ PC & Đề xuất nâng cấp (UC3)
+│     ├──── Chức năng tạo, xem và lưu Hồ sơ cấu hình cá nhân (PC Profile)
+│     ├──── Prompt Engineering để AI phân tích điểm nghẽn (Bottleneck)
+│     ├──── Thuật toán AI tìm linh kiện thay thế phù hợp ngân sách
+│     ├──── Chạy Rule Engine kiểm tra nguồn, mainboard cho món được đề xuất
+│     └──── Hiển thị lộ trình nâng cấp kèm giải thích chuyên sâu từ AI
 │
-├──── 7.6 Hồ sơ PC & Đề xuất nâng cấp (UC3)
-│     ├──── 7.6.1 Chức năng tạo, xem và lưu Hồ sơ cấu hình cá nhân (PC Profile)
-│     ├──── 7.6.2 Prompt Engineering để AI phân tích điểm nghẽn (Bottleneck)
-│     ├──── 7.6.3 Thuật toán AI tìm linh kiện thay thế phù hợp ngân sách
-│     ├──── 7.6.4 Chạy Rule Engine kiểm tra nguồn, mainboard cho món được đề xuất
-│     └──── 7.6.5 Hiển thị lộ trình nâng cấp kèm giải thích chuyên sâu từ AI
+├──── Quản lý Giỏ hàng & Thanh toán (UC4)
+│     ├──── Quản lý Giỏ hàng (Thêm, sửa số lượng, xóa)
+│     ├──── Kiểm tra tương thích chéo ẩn cho toàn bộ Giỏ hàng trước checkout
+│     ├──── Form điền địa chỉ & Chọn phương thức thanh toán
+│     ├──── Xử lý trừ tồn kho đồng thời và Tạo Đơn hàng (Order PENDING)
+│     └──── Tích hợp Gửi Email xác nhận đặt hàng thành công
 │
-├──── 7.7 Quản lý Giỏ hàng & Thanh toán (UC4)
-│     ├──── 7.7.1 Quản lý Giỏ hàng (Thêm, sửa số lượng, xóa)
-│     ├──── 7.7.2 Kiểm tra tương thích chéo ẩn cho toàn bộ Giỏ hàng trước checkout
-│     ├──── 7.7.3 Form điền địa chỉ & Chọn phương thức thanh toán
-│     ├──── 7.7.4 Xử lý trừ tồn kho đồng thời và Tạo Đơn hàng (Order PENDING)
-│     └──── 7.7.5 Tích hợp Gửi Email xác nhận đặt hàng thành công
-│
-└──── 7.8 Quản lý Đơn hàng & Thống kê (UC7, UC8)
-      ├──── 7.8.1 Giao diện Admin quản lý danh sách Đơn hàng (UC7)
-      ├──── 7.8.2 Flow cập nhật trạng thái (PENDING, CONFIRMED, SHIPPING, DELIVERED)
-      ├──── 7.8.3 Xử lý Hủy đơn và Hoàn lại tồn kho
-      ├──── 7.8.4 Tích hợp Gửi Email thông báo khi thay đổi trạng thái
-      └──── 7.8.5 Dashboard thống kê doanh thu và số lượng đơn hàng (UC8)
+└──── Quản lý Đơn hàng & Thống kê (UC7, UC8)
+      ├──── Giao diện Admin quản lý danh sách Đơn hàng (UC7)
+      ├──── Flow cập nhật trạng thái (PENDING, CONFIRMED, SHIPPING, DELIVERED)
+      ├──── Xử lý Hủy đơn và Hoàn lại tồn kho
+      ├──── Tích hợp Gửi Email thông báo khi thay đổi trạng thái
+      └──── Dashboard thống kê doanh thu và số lượng đơn hàng (UC8)
 ```
