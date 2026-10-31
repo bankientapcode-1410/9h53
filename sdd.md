@@ -912,6 +912,7 @@ sequenceDiagram
 > **Tài liệu Thiết kế Chi tiết (Detailed Design - DD) theo từng phân hệ:**
 > * **Core Rule Engine - Quản lý Tập luật (UC6):** [docs/detail-design/dd-uc6-core-rule-engine.md](docs/detail-design/dd-uc6-core-rule-engine.md)
 > * **Quản lý Sản phẩm & Danh mục (UC1a, UC5):** [docs/detail-design/dd-uc5-product-catalog.md](docs/detail-design/dd-uc5-product-catalog.md)
+> * **Chat Tư vấn Phần cứng với AI (UC1):** [docs/detail-design/dd-uc1-ai-chat.md](docs/detail-design/dd-uc1-ai-chat.md) | [Kế hoạch Triển khai](docs/implementation-plan/plan-uc1-ai-chat.md)
 > * **Java Runtime Upgrade (Java 25 LTS):** [docs/detail-design/dd-java-runtime-upgrade.md](docs/detail-design/dd-java-runtime-upgrade.md)
 > * **Local Dev & Demo Automation Script:** [docs/detail-design/dd-local-dev-automation.md](docs/detail-design/dd-local-dev-automation.md)
 

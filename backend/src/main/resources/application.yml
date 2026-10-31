@@ -23,5 +23,6 @@ smartpc:
       maximum-size: 500
   ai:
     gemini:
-      model: gemini-1.5-flash
-      timeout-seconds: 5
+      api-key: ${GEMINI_API_KEY:}
+      model: gemini-3.1-flash-lite
+      timeout-seconds: 8
