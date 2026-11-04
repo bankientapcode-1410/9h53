@@ -13,7 +13,7 @@ import { ChatMessage } from '../types/chat.types';
 const INITIAL_MESSAGE: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
-  content: `Chào bạn! Mình là **Chuyên gia AI Tư vấn Phần cứng của SmartPC** 🤖
+  content: `Chào bạn! Mình là **Chuyên gia AI SmartPC** 🤖
 
 Mình có thể hỗ trợ bạn:
 * 🖥️ **Tư vấn build PC trọn gói:** Theo ngân sách từ 10 - 100 triệu (Gaming, Đồ họa 3D, Văn phòng).
@@ -192,10 +192,7 @@ export function AIChatWidget() {
               </div>
               <div className="leading-tight">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-extrabold text-sm text-white">Chuyên Gia AI Phần Cứng</h3>
-                  <span className="bg-smart-cyan/20 text-smart-cyan text-[10px] font-bold px-1.5 py-0.2 rounded border border-smart-cyan/40">
-                    Gemini 1.5
-                  </span>
+                  <h3 className="font-extrabold text-sm text-white">Chuyên gia AI SmartPC</h3>
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] text-slate-300">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-ping" />
@@ -250,11 +247,11 @@ export function AIChatWidget() {
             {/* Loading Indicator */}
             {isLoading && (
               <div className="flex items-start gap-2">
-                <div className="w-7 h-7 rounded-lg bg-smart-blue/10 text-smart-blue flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-4 h-4" />
+                <div className="w-7 h-7 rounded-lg bg-smart-blue/10 text-smart-blue flex items-center justify-center flex-shrink-0 animate-pulse">
+                  <Bot className="w-4 h-4 text-smart-blue" />
                 </div>
-                <div className="bg-white border border-slate-200/90 rounded-2xl rounded-tl-none p-3 shadow-sm flex items-center space-x-1.5">
-                  <span className="text-xs text-slate-500 font-medium">Chuyên gia đang phân tích...</span>
+                <div className="bg-white border border-slate-200/90 rounded-2xl rounded-tl-none p-3 shadow-sm flex items-center space-x-2">
+                  <span className="text-xs text-slate-600 font-medium">Chuyên gia đang phân tích & tra cứu kho hàng...</span>
                   <div className="flex space-x-1">
                     <span className="w-1.5 h-1.5 bg-smart-blue rounded-full animate-bounce [animation-delay:-0.3s]" />
                     <span className="w-1.5 h-1.5 bg-smart-cyan rounded-full animate-bounce [animation-delay:-0.15s]" />
@@ -313,7 +310,7 @@ export function AIChatWidget() {
               </button>
             </form>
             <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 px-0.5">
-              <span>Được hỗ trợ bởi Google Gemini AI</span>
+              <span>Hệ thống Chuyên gia AI SmartPC</span>
               <span className="flex items-center gap-0.5 text-emerald-600">
                 <ShieldCheck className="w-3 h-3" />
                 Đối soát Rule Engine

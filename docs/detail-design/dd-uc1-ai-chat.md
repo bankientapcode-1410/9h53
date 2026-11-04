@@ -157,12 +157,12 @@ QUY TẮC BẮT BUỘC VỀ KHO HÀNG & TƯ VẤN:
 
 ### 4.3. Xử lý Định dạng Payload Gọi Gemini API
 
-* Endpoint: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}`
+* Endpoint: `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={API_KEY}`
 * Request Body gửi sang Gemini:
 ```json
 {
   "systemInstruction": {
-    "parts": [{ "text": "Hệ thống prompt chuyên gia SmartPC..." }]
+    "parts": [{ "text": "Hệ thống prompt chuyên gia SmartPC kèm danh mục kho hàng..." }]
   },
   "contents": [
     {
@@ -174,10 +174,16 @@ QUY TẮC BẮT BUỘC VỀ KHO HÀNG & TƯ VẤN:
     "temperature": 0.7,
     "topK": 40,
     "topP": 0.95,
-    "maxOutputTokens": 1024
+    "maxOutputTokens": 1500
   }
 }
 ```
+
+### 4.4. Cơ chế Semantic Intent Mapping cho Lưới Sản Phẩm (Screen 2a)
+Khi người dùng tìm kiếm bằng câu tự nhiên trên màn hình `/ai-search` (ví dụ: *"Card chiến LOL ngon"*, *"CPU render video đồ họa"*):
+1. **Phân tích Intent Danh mục:** Quét từ khóa tự nhiên để nhận diện danh mục phần cứng chính (`GPU`, `CPU`, `RAM`, `MOTHERBOARD`, `SSD_M2`, `PSU`, `CASE`, `CPU_COOLER`).
+2. **Khớp nối sản phẩm AI đề xuất:** Quét các tên mã linh kiện được AI đề xuất trong câu trả lời (`aiData.reply`), trích xuất sản phẩm thực tế trong kho hàng và đẩy lên đầu danh sách hiển thị.
+3. **Fallback hiển thị:** Nếu không tìm thấy tên chính xác bằng chuỗi thô, tự động nạp các sản phẩm thuộc danh mục nhận diện được hoặc theo mức ngân sách, đảm bảo lưới sản phẩm không bao giờ bị rỗng 0 kết quả khi người dùng tìm kiếm theo ngữ cảnh.
 
 ---
 

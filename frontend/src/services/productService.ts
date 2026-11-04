@@ -6,6 +6,7 @@ import {
   ProductSummaryDTO,
   ProductDetailDTO,
   FacetFilterGroupDTO,
+  AdminProductDTO,
 } from '../features/product-catalog/types/product.types';
 import { MOCK_PRODUCTS } from './mockData';
 
@@ -102,8 +103,13 @@ export const productService = {
         });
       }
       if (criteria.search) {
-        const q = criteria.search.toLowerCase();
-        items = items.filter((p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q));
+        const q = criteria.search.toLowerCase().trim();
+        const directMatches = items.filter((p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q));
+        if (directMatches.length > 0) {
+          items = directMatches;
+        } else {
+          items = applySemanticIntentFilter(items, q);
+        }
       }
 
       // Sort
@@ -113,8 +119,9 @@ export const productService = {
         items.sort((a, b) => b.price - a.price);
       } else if (criteria.sort === 'benchmark_desc') {
         items.sort((a, b) => b.benchmark_score - a.benchmark_score);
-      } else {
-        // newest
+      } else if (!criteria.search) {
+        // Chỉ sắp xếp theo mới nhất khi người dùng duyệt bình thường, không tìm kiếm.
+        // Khi tìm kiếm (criteria.search), giữ nguyên thứ tự điểm liên quan (relevance ranking) đã tính!
         items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       }
 
@@ -356,4 +363,157 @@ export const productService = {
       };
     }
   },
+
+  /**
+   * Tìm kiếm sản phẩm theo ngữ nghĩa & nhận diện ý định phần cứng (Semantic Search)
+   */
+  async searchSemantic(query: string, aiRecommendedText?: string): Promise<ApiResponse<PageResponse<ProductSummaryDTO>>> {
+    const activeProducts = MOCK_PRODUCTS.filter((p) => p.is_active && !p.deleted_at);
+    const filtered = applySemanticIntentFilter(activeProducts, query, aiRecommendedText);
+
+    const summaries: ProductSummaryDTO[] = filtered.slice(0, 8).map((p) => ({
+      product_id: p.product_id,
+      name: p.name,
+      brand: p.brand,
+      category_code: p.category.category_code,
+      category_name: p.category.category_name,
+      image_url: p.image_url || '',
+      price: p.price,
+      in_stock: p.stock_quantity > 0,
+      benchmark_score: p.benchmark_score,
+      key_specs: { ...p.specs },
+    }));
+
+    return {
+      success: true,
+      status_code: 200,
+      message: 'Tìm kiếm ngữ nghĩa thành công',
+      data: {
+        content: summaries,
+        page: 0,
+        size: 8,
+        total_elements: summaries.length,
+        total_pages: 1,
+        first: true,
+        last: true,
+      },
+    };
+  },
 };
+
+const VIETNAMESE_STOP_WORDS = new Set([
+  'máy', 'tính', 'cho', 'của', 'các', 'những', 'cần', 'mua', 'tìm', 'kiếm',
+  'loại', 'nào', 'được', 'với', 'trong', 'hàng', 'chính', 'hãng', 'bộ',
+  'dàn', 'chiếc', 'cái', 'con', 'em', 'mình', 'tôi', 'bạn', 'giúp', 'pc'
+]);
+
+function detectExplicitCategories(query: string): string[] {
+  const q = query.toLowerCase();
+  const explicit: string[] = [];
+
+  // CPU (Chip, vi xử lý)
+  if (/\b(cpu|chip|vi xử lý|bộ vi xử lý|bộ xử lý|processor|intel core|ryzen|core i[3579]|i[3579]-?\d{4,5}[a-z]*)\b/i.test(q)) {
+    explicit.push('CPU');
+  }
+  // GPU (Card màn hình, VGA)
+  if (/\b(vga|gpu|card màn hình|card đồ họa|card|rtx|rx|gtx|radeon|geforce)\b/i.test(q) || /chiến lol|fps|esports/.test(q)) {
+    explicit.push('GPU');
+  }
+  // RAM (Bộ nhớ trong)
+  if (/\b(ram|thanh ram|bộ nhớ trong|ddr4|ddr5)\b/i.test(q)) {
+    explicit.push('RAM');
+  }
+  // Mainboard (Bo mạch chủ)
+  if (/\b(main|mainboard|bo mạch chủ|bo mạch|motherboard|h610|b760|b650|z790|x670)\b/i.test(q)) {
+    explicit.push('MOTHERBOARD');
+  }
+  // SSD (Ổ cứng M.2)
+  if (/\b(ssd|ổ cứng|ổ ssd|m2|m\.2|nvme|lưu trữ)\b/i.test(q)) {
+    explicit.push('SSD_M2');
+  }
+  // PSU (Nguồn máy tính)
+  if (/\b(nguồn|psu|bộ nguồn|công suất nguồn|80 plus|watt)\b/i.test(q)) {
+    explicit.push('PSU');
+  }
+  // Case (Vỏ máy tính)
+  if (/\b(case|vỏ case|vỏ máy tính|thùng máy|thùng case|vỏ pc|bể cá)\b/i.test(q)) {
+    explicit.push('CASE');
+  }
+  // Cooler (Tản nhiệt CPU)
+  if (/\b(tản|tản nhiệt|tản khí|tản nước|aio|cooler|cooling|kraken|assassin)\b/i.test(q)) {
+    explicit.push('CPU_COOLER');
+  }
+
+  return explicit;
+}
+
+function applySemanticIntentFilter(
+  products: AdminProductDTO[],
+  query: string,
+  aiRecommendedText?: string
+): AdminProductDTO[] {
+  const qLower = query.toLowerCase().trim();
+  const aiLower = (aiRecommendedText || '').toLowerCase();
+  const explicitCats = detectExplicitCategories(query);
+
+  let candidates = products;
+  // Nếu câu tìm kiếm nêu rõ linh kiện cụ thể (VD: "Chip cho máy tính văn phòng" -> CPU, "Card chiến LOL" -> GPU, "RAM 16GB" -> RAM),
+  // CÔ LẬP TRIỆT ĐỂ danh mục đó, TUYỆT ĐỐI không để lọt Vỏ Case, Nguồn hay linh kiện khác vào kết quả!
+  if (explicitCats.length > 0) {
+    candidates = candidates.filter((p) => explicitCats.includes(p.category.category_code));
+  }
+
+  // Model & Brand tokens
+  const tokenRegex = /(12100|12400|13600|7600|7800|6600|3060|4060|4070|h610|b760|b650|nv2|kc3000|990|550bn|cv650|rm750|rm850|nyx|air\s*100|h5|o11|assassin|ak620|aqua|lt720|kraken|asus|msi|intel|amd|corsair|kingston|deepcool|nzxt|thermalright|montech|lian\s*li|xigmatek|samsung)/gi;
+  const queryTokens = (qLower.match(tokenRegex) || []).map((t) => t.toLowerCase());
+  const aiTokens = (aiLower.match(tokenRegex) || []).map((t) => t.toLowerCase());
+  const allTokens = Array.from(new Set([...queryTokens, ...aiTokens]));
+
+  // Lọc từ khóa có nghĩa, loại bỏ hư từ tiếng Việt như 'máy', 'tính', 'cho', 'của' để tránh match tràn lan
+  const queryWords = qLower
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, ''))
+    .filter((w) => w.length > 1 && !VIETNAMESE_STOP_WORDS.has(w));
+
+  const isOffice = /văn phòng|office|học tập|word|excel/.test(qLower);
+  const isBudget = /giá rẻ|sinh viên|rẻ|bình dân|tiết kiệm/.test(qLower);
+
+  const scored = candidates.map((p) => {
+    let score = 10; // Điểm cơ bản cho sản phẩm thuộc đúng danh mục yêu cầu
+    const pNameLower = p.name.toLowerCase();
+    const pBrandLower = p.brand.toLowerCase();
+    const pDescLower = (p.description || '').toLowerCase();
+
+    // AI mention boost
+    if (aiLower && (aiLower.includes(pNameLower) || aiLower.includes(p.name.toLowerCase()))) {
+      score += 100;
+    }
+
+    // Specific tokens match (4060, 12100, asus, intel,...)
+    allTokens.forEach((token) => {
+      if (pNameLower.includes(token)) score += 30;
+      if (pBrandLower.includes(token)) score += 15;
+    });
+
+    // Individual content words match
+    queryWords.forEach((w) => {
+      if (pNameLower.includes(w)) score += 15;
+      if (pDescLower.includes(w)) score += 10;
+    });
+
+    // Office & Budget boosts: ưu tiên các mẫu chip/linh kiện giá mềm, tối ưu chi phí văn phòng
+    if (isOffice || isBudget) {
+      if (p.price <= 3500000) score += 40;
+      else if (p.price <= 6000000) score += 20;
+    }
+
+    return { product: p, score };
+  });
+
+  const matched = scored.filter((item) => item.score > 0).sort((a, b) => b.score - a.score);
+  if (matched.length > 0) {
+    return matched.map((item) => item.product);
+  }
+
+  return candidates;
+}
