@@ -16,6 +16,8 @@ import java.util.List;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, String>, JpaSpecificationExecutor<Product> {
 
+    List<Product> findByIsActiveTrueAndDeletedAtIsNull();
+
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Product p SET p.syncStatus = :status, p.syncRequestedAt = :time WHERE p.productId = :id")
     int updateSyncStatus(@Param("id") String id,

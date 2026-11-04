@@ -33,6 +33,8 @@ import { ProductDetailPage } from './features/product-catalog/pages/ProductDetai
 import { AdminProductListPage } from './features/admin/products/pages/AdminProductListPage';
 import { AdminCategoryPage } from './features/admin/categories/pages/AdminCategoryPage';
 import { AdminRuleListPage } from './features/admin/rules/pages/AdminRuleListPage';
+import { AIChatWidget } from './features/ai-chat/components/AIChatWidget';
+import { AISearchPage } from './features/ai-chat/pages/AISearchPage';
 
 const POPULAR_CATEGORIES = [
   { label: 'CPU / Vi xử lý', code: 'CPU' },
@@ -450,12 +452,14 @@ export default function App() {
             <Route path="/" element={<CategoryBrowsePage />} />
             <Route path="/products" element={<CategoryBrowsePage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
+            <Route path="/ai-search" element={<AISearchPage />} />
             <Route path="/admin/products" element={<AdminProductListPage />} />
             <Route path="/admin/categories" element={<AdminCategoryPage />} />
             <Route path="/admin/rules" element={<AdminRuleListPage />} />
           </Routes>
         </main>
         <Footer />
+        <AIChatWidget />
       </div>
     </BrowserRouter>
   );

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React, { useEffect, useState, useCallback } from 'react';
 import { Search, Sparkles, Filter, ShieldCheck, Zap, Cpu } from 'lucide-react';
 import { useCategoryStore } from '../../../stores/useCategoryStore';
@@ -180,6 +181,16 @@ export const CategoryBrowsePage: React.FC = () => {
               </button>
             </div>
           </form>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="text-xs text-slate-500 font-medium">Hoặc chuyển sang:</span>
+            <Link
+              to={`/ai-search?q=${encodeURIComponent(searchInput || '')}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 hover:bg-blue-100 text-smart-blue font-bold text-xs border border-blue-200 transition shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-smart-blue animate-pulse" />
+              <span>Hỏi Chuyên Gia AI (Semantic Search)</span>
+            </Link>
+          </div>
         </div>
       </div>
 
