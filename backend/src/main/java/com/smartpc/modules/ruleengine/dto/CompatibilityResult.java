@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -34,6 +33,9 @@ public class CompatibilityResult {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ViolationDetail {
+        @JsonProperty("rule_id")
+        private String ruleId;
+
         @JsonProperty("rule_name")
         private String ruleName;
 
@@ -52,7 +54,10 @@ public class CompatibilityResult {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ProductReference {
-        private UUID id;
+        private String id;
         private String name;
+
+        @JsonProperty("category_code")
+        private String categoryCode;
     }
 }

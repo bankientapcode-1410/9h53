@@ -910,7 +910,7 @@ sequenceDiagram
 5. **Output:** Sau khi tìm được phương án tối ưu (Hiệu năng tốt + Đúng ngân sách + Rule Engine báo tương thích an toàn), AI sẽ sinh văn bản giải thích lý luận của mình và trả về Frontend để người dùng tham khảo và bấm "Thêm vào giỏ".
 
 > **Tài liệu Thiết kế Chi tiết (Detailed Design - DD) theo từng phân hệ:**
-> * **Core Rule Engine - Quản lý Tập luật (UC6):** [docs/detail-design/dd-uc6-core-rule-engine.md](docs/detail-design/dd-uc6-core-rule-engine.md)
+> * **Core Rule Engine - Quản lý Tập luật & Đánh giá Tương thích (UC6 - v1.1):** [docs/detail-design/dd-uc6-core-rule-engine.md](docs/detail-design/dd-uc6-core-rule-engine.md) | [Kế hoạch Triển khai](docs/implementation-plan/plan-uc6-core-rule-engine.md)
 > * **Quản lý Sản phẩm & Danh mục (UC1a, UC5):** [docs/detail-design/dd-uc5-product-catalog.md](docs/detail-design/dd-uc5-product-catalog.md)
 > * **Java Runtime Upgrade (Java 25 LTS):** [docs/detail-design/dd-java-runtime-upgrade.md](docs/detail-design/dd-java-runtime-upgrade.md)
 > * **Local Dev & Demo Automation Script:** [docs/detail-design/dd-local-dev-automation.md](docs/detail-design/dd-local-dev-automation.md)
@@ -1058,7 +1058,14 @@ project1/
 ├── docker/           # Cấu hình container hóa và Docker Compose cho môi trường phát triển cục bộ (MySQL 8.0, Redis...)
 ├── scripts/          # Kịch bản tự động hóa Local Dev/Demo (dev.ps1) và script nạp dữ liệu mẫu khởi tạo (Seed data, tập luật tương thích)
 ├── dev.cmd           # Wrapper khởi chạy nhanh môi trường Local Dev / Demo 1-click trên Windows
-└── docs/             # Tài liệu kỹ thuật dự án: Thư mục thiết kế chi tiết (docs/detail-design/), hình ảnh mockup giao diện (docs/screens/) và đặc tả kiến trúc
+└── docs/             # Tài liệu kỹ thuật dự án: Thư mục thiết kế chi tiết (docs/detail-design/), kế hoạch triển khai (docs/implementation-plan/), hình ảnh mockup giao diện (docs/screens/) và đặc tả kiến trúc
+    ├── detail-design/
+    │   ├── dd-uc5-product-catalog.md      # Thiết kế chi tiết Quản lý Sản phẩm & Danh mục (UC1a, UC5 - v1.1)
+    │   ├── dd-uc6-core-rule-engine.md     # Thiết kế chi tiết Core Rule Engine & Quản lý Tập luật (UC6 - v1.1)
+    │   ├── dd-java-runtime-upgrade.md     # Thiết kế nâng cấp Java 25 LTS
+    │   └── dd-local-dev-automation.md     # Thiết kế kịch bản tự động hóa Local Dev / Demo
+    └── implementation-plan/
+        └── plan-uc6-core-rule-engine.md   # Kế hoạch triển khai Core Rule Engine (UC6 & WBS 7.4)
 ```
 
 > *Ghi chú: Bản thiết kế chi tiết phân rã từng file của Backend và Frontend được lưu trữ tại [docs/REPO_DESIGN.md](docs/REPO_DESIGN.md).*

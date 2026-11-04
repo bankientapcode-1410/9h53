@@ -25,12 +25,14 @@ import {
   ShieldCheck,
   MapPin,
   Headphones,
+  Sliders,
 } from 'lucide-react';
 
 import { CategoryBrowsePage } from './features/product-catalog/pages/CategoryBrowsePage';
 import { ProductDetailPage } from './features/product-catalog/pages/ProductDetailPage';
 import { AdminProductListPage } from './features/admin/products/pages/AdminProductListPage';
 import { AdminCategoryPage } from './features/admin/categories/pages/AdminCategoryPage';
+import { AdminRuleListPage } from './features/admin/rules/pages/AdminRuleListPage';
 
 const POPULAR_CATEGORIES = [
   { label: 'CPU / Vi xử lý', code: 'CPU' },
@@ -273,6 +275,17 @@ function Header() {
               <FolderTree className="w-3.5 h-3.5 text-amber-600" />
               <span>Cây Danh Mục (2 Cấp)</span>
             </Link>
+            <Link
+              to="/admin/rules"
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition whitespace-nowrap ${
+                location.pathname === '/admin/rules'
+                  ? 'bg-white text-amber-800 font-bold border border-amber-300 shadow-sm'
+                  : 'text-slate-600 hover:text-smart-navy hover:bg-white/60'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5 text-amber-600" />
+              <span>Tập Luật Tương Thích (UC6)</span>
+            </Link>
           </div>
         </div>
       ) : (
@@ -439,6 +452,7 @@ export default function App() {
             <Route path="/products/:id" element={<ProductDetailPage />} />
             <Route path="/admin/products" element={<AdminProductListPage />} />
             <Route path="/admin/categories" element={<AdminCategoryPage />} />
+            <Route path="/admin/rules" element={<AdminRuleListPage />} />
           </Routes>
         </main>
         <Footer />

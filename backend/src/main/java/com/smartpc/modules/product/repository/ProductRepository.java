@@ -32,6 +32,9 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
                                    @Param("time") LocalDateTime time,
                                    Pageable pageable);
 
+    @Query("SELECT p FROM Product p JOIN FETCH p.category WHERE p.productId IN :ids AND p.isActive = true AND p.deletedAt IS NULL")
+    List<Product> findAllActiveWithCategoryByIds(@Param("ids") java.util.Collection<String> ids);
+
     @Query("SELECT COUNT(p) FROM Product p WHERE p.category.categoryId = :categoryId")
     long countByCategoryId(@Param("categoryId") String categoryId);
 

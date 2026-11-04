@@ -32,7 +32,19 @@ public enum ErrorCode {
     PROD_SYNC_IN_PROGRESS(HttpStatus.CONFLICT, "Sản phẩm đang trong quá trình đồng bộ vector, vui lòng thử lại sau ít phút"),
     PROD_BATCH_TOO_LARGE(HttpStatus.BAD_REQUEST, "Số lượng sản phẩm yêu cầu đồng bộ vượt quá giới hạn tối đa cho phép"),
     PROD_AI_GATEWAY_ERROR(HttpStatus.BAD_GATEWAY, "Không thể kết nối đến dịch vụ AI Embedding"),
-    PROD_AI_GATEWAY_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "Dịch vụ AI Embedding phản hồi quá chậm (quá thời gian chờ)");
+    PROD_AI_GATEWAY_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "Dịch vụ AI Embedding phản hồi quá chậm (quá thời gian chờ)"),
+
+    // Core Rule Engine Subsystem (UC6)
+    RULE_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy quy tắc tương thích yêu cầu"),
+    RULE_SELF_REFERENCE(HttpStatus.BAD_REQUEST, "Danh mục nguồn và danh mục đích không được trùng nhau"),
+    RULE_INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "Danh mục nguồn hoặc đích không tồn tại hoặc chưa hỗ trợ thông số kỹ thuật"),
+    RULE_INVALID_SPEC_KEY(HttpStatus.BAD_REQUEST, "Khóa thông số kỹ thuật không đúng định dạng snake_case hoặc dùng khóa tổng hợp sai vị trí"),
+    RULE_UNKNOWN_AGGREGATE_KEY(HttpStatus.BAD_REQUEST, "Khóa tổng hợp động không được hỗ trợ bởi Rule Engine"),
+    RULE_INCOMPATIBLE_OPERATOR(HttpStatus.BAD_REQUEST, "Toán tử so sánh không tương thích với khóa thông số hoặc kiểu dữ liệu"),
+    RULE_INVALID_TEMPLATE_SYNTAX(HttpStatus.BAD_REQUEST, "Mẫu thông báo lỗi phải từ 10 đến 500 ký tự và có cặp dấu ngoặc nhọn '{}' cân bằng"),
+    RULE_UNKNOWN_PLACEHOLDER(HttpStatus.BAD_REQUEST, "Mẫu thông báo lỗi chứa biến nội suy không nằm trong danh sách hỗ trợ"),
+    RULE_DUPLICATE_DEFINITION(HttpStatus.CONFLICT, "Quy tắc tương thích với cùng cặp danh mục, khóa thông số và toán tử này đã tồn tại"),
+    RULE_DRY_RUN_EMPTY_PRODUCTS(HttpStatus.BAD_REQUEST, "Vui lòng chọn ít nhất một sản phẩm mẫu để chạy thử quy tắc");
 
     private final HttpStatus httpStatus;
     private final String defaultMessage;
