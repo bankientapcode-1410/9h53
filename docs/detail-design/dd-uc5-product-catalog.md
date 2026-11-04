@@ -858,7 +858,7 @@ Bám sát mockup `docs/screens/screen1.png` và `docs/screens/screen3.png`:
        * Tiêu đề: Icon `Coins` + `Khoảng giá` (kèm hiển thị trạng thái đang lọc giá nếu có).
        * Nút `Tất cả mức giá` (active khi không lọc giá) và các chip khoảng giá chuẩn: `Dưới 5 triệu` (chỉ đặt `max_price=5000000`), `5 - 15 triệu` (`min_price=5000000&max_price=15000000`), `Trên 15 triệu` (chỉ đặt `min_price=15000000`)...
        * Click để chọn một khoảng giá, click lại chip đang active để hủy chọn (toggle về Tất cả).
-     * **Nhóm Chips Thông số Mở rộng (Spec Chips - nếu có):** Được xếp ngay hàng bên dưới dạng các dòng chip bổ sung hoặc card phụ đầy đủ độ rộng, cùng quy chuẩn tinh gọn. Nút `Tất cả` của từng nhóm spec gọi `onClearSpec(group.code)` để xóa nguyên tử `specs[<key>]` khỏi URL.
+     * **Loại bỏ Nhóm Chips Thông số Mở rộng (Spec Chips) ở dưới 2 box nhanh:** Loại bỏ hoàn toàn khối các dòng chip thông số mở rộng tự sinh bên dưới 2 box Thương hiệu và Khoảng giá (trước đây tự sinh ra ~3 dòng khi chọn danh mục như CPU: Socket, Số nhân...). Việc này loại bỏ bộ lọc thừa, không hoạt động tốt, giữ thanh QuickChipsFilterBar luôn tinh gọn tối đa với đúng 2 box cốt lõi (Thương hiệu & Khoảng giá). Mọi nhu cầu lọc chi tiết theo thuộc tính kỹ thuật chuyên sâu được phụ trách tập trung bởi DynamicSpecsFilterPanel (Bộ lọc chi tiết) hoặc công cụ Tìm kiếm AI.
      * **Nút Xóa bộ lọc (`RotateCcw`):** Tích hợp ở góc trên bên phải thanh Quick Chips khi có bất kỳ tiêu chí lọc nào đang kích hoạt (`activeBrands > 0` hoặc có dải giá hoặc specs).
    * **Tối ưu Rút gọn URL & REST API Query String (`useProductFilter.ts` & `productService.ts`):**
      * Loại bỏ hoàn toàn các tham số mặc định hoặc dư thừa trên cả thanh địa chỉ trình duyệt và khi gọi `GET /api/v1/products`:
@@ -869,6 +869,18 @@ Bám sát mockup `docs/screens/screen1.png` và `docs/screens/screen3.png`:
    * **Nguyên tắc Logic Lọc Dữ liệu (Filtering Logic):**
      * **Cùng nhóm (Intra-group): Phép toán OR.** Khi chọn nhiều giá trị trong cùng một nhóm (ví dụ chọn nhiều thương hiệu ASUS, MSI), hệ thống truy vấn các sản phẩm thỏa mãn `brand = 'ASUS' OR brand = 'MSI'` (tương đương `brand IN ('ASUS', 'MSI')`).
      * **Khác nhóm (Inter-group): Phép toán AND.** Khi kết hợp giữa các nhóm tiêu chí khác nhau (Thương hiệu, Khoảng giá, và các Thông số kỹ thuật Specs), hệ thống truy vấn các sản phẩm thỏa mãn đồng thời: `(Brand OR ...) AND (Price >= min AND Price <= max) AND (Specs match)`.
+1.1. **Bộ lọc chi tiết thông số (Slide Down Dropdown - DynamicSpecsFilterPanel.tsx):**
+   * **Bố cục Slide Down hiển thị để chọn (Không nhập text):**
+     * Loại bỏ hoàn toàn các ô input text gõ tay thủ công (ngăn chặn triệt để lỗi mất focus, sai lệch chuỗi ký tự và xung đột toggle URL query).
+     * Mọi thông số filterable (như Socket, Số nhân, Đồ họa tích hợp...) được hiển thị dưới dạng các **Hộp chọn Slide Down / Dropdown Selector** gọn gàng trên lưới responsive (grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3).
+   * **Nguồn dữ liệu Lựa chọn Động (Dynamic Options):**
+     * Tích hợp đồng bộ dữ liệu acets từ API GET /api/v1/products/facets?category=<code> kết hợp với specMetadata.fields từ schema danh mục.
+     * Mỗi tùy chọn hiển thị rõ ràng nhãn giá trị kèm đơn vị chuẩn (như 8 nhân, 14 nhân, AM5, LGA1700) và số lượng sản phẩm thực tế có trong kho (count).
+   * **Tương tác Menu Trượt xuống (Slide Down Interaction):**
+     * Nút kích hoạt (Trigger Button) bo góc mềm, hiển thị giá trị đang chọn và icon ChevronDown xoay chuyển trạng thái mượt mà.
+     * Menu trượt xuống (Slide Down Menu) nổi bật (bsolute z-30 shadow-lg), hỗ trợ nhấp để chọn giá trị, tùy chọn đầu tiên là Tất cả <Tên thông số> để hủy lọc.
+     * Tự động đóng menu khi nhấp chuột ra ngoài (click-outside).
+
 2. **Toolbar & Sắp xếp:** Tổng số sản phẩm (VD: *"Tìm thấy 48 card đồ họa"*); Dropdown: `newest` (Mới nhất), `price_asc`, `price_desc`, `benchmark_desc` (Hiệu năng cao nhất).
 3. **Lưới 4 cột (`ProductGrid.tsx` & `ProductCard.tsx`):** Ảnh 1:1, tên sản phẩm cố định chiều cao 2 dòng (`block line-clamp-2 min-h-[2.5rem]`) để các dãy tag `key_specs` trên cùng hàng luôn thẳng hàng ngang, các tag `key_specs` (trích tối đa 4 trường theo thứ tự ưu tiên `filterable` rồi tới các trường trong `CategorySpecSchemaRegistry`), giá, nhãn `HẾT HÀNG` khi `in_stock = false`.
    * **Quy chuẩn hiển thị & căn chỉnh `key_specs` trên `ProductCard.tsx`:**

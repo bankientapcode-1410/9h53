@@ -5,6 +5,7 @@ import com.smartpc.modules.ruleengine.dto.CompatibilityResult.ViolationDetail;
 import com.smartpc.modules.ruleengine.entity.CompatRule;
 import com.smartpc.modules.ruleengine.model.ProductItemContext;
 import com.smartpc.modules.ruleengine.model.RuleOperator;
+import com.smartpc.modules.ruleengine.model.RuleSeverity;
 import com.smartpc.modules.ruleengine.strategy.OperatorStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -46,6 +47,8 @@ public class RuleEvaluator {
             return violations;
         }
 
+        Set<String> warnedKeys = null;
+
         boolean isAggregate = rule.getSourceSpecKey() != null && rule.getSourceSpecKey().startsWith("_")
                 || SYSTEM_CATEGORY.equalsIgnoreCase(rule.getSourceCategory());
 
@@ -64,8 +67,24 @@ public class RuleEvaluator {
                 if (targetItem == null) continue;
                 Object targetValue = targetItem.getSpecs() != null ? targetItem.getSpecs().get(rule.getTargetSpecKey()) : null;
                 if (targetValue == null) {
-                    log.warn("Missing target spec key [{}] on product [{}] when evaluating rule [{}]",
-                            rule.getTargetSpecKey(), targetItem.getProductId(), rule.getRuleName());
+                    String warnKey = rule.getRuleId() + ":" + targetItem.getProductId() + ":" + rule.getTargetSpecKey();
+                    if (warnedKeys == null) {
+                        warnedKeys = new HashSet<>();
+                    }
+                    if (warnedKeys.add(warnKey)) {
+                        log.warn("Missing target spec key [{}] on product [{}] when evaluating rule [{}]",
+                                rule.getTargetSpecKey(), targetItem.getProductId(), rule.getRuleName());
+                        RuleSeverity warnSev = rule.getSeverity() == RuleSeverity.INFO ? RuleSeverity.INFO : RuleSeverity.WARNING;
+                        violations.add(ViolationDetail.builder()
+                                .ruleId(rule.getRuleId())
+                                .ruleName(rule.getRuleName())
+                                .severity(warnSev)
+                                .message("Không thể xác minh quy tắc '" + rule.getRuleName() + "': sản phẩm '"
+                                        + targetItem.getProductName() + "' chưa khai báo thông số '" + rule.getTargetSpecKey() + "'.")
+                                .sourceProduct(isSystemOrTdp(rule) ? null : toProductReference(representativeSource))
+                                .targetProduct(toProductReference(targetItem))
+                                .build());
+                    }
                     continue;
                 }
 
@@ -96,8 +115,24 @@ public class RuleEvaluator {
                 if (sourceItem == null) continue;
                 Object sourceValue = sourceItem.getSpecs() != null ? sourceItem.getSpecs().get(rule.getSourceSpecKey()) : null;
                 if (sourceValue == null) {
-                    log.warn("Missing source spec key [{}] on product [{}] when evaluating rule [{}]",
-                            rule.getSourceSpecKey(), sourceItem.getProductId(), rule.getRuleName());
+                    String warnKey = rule.getRuleId() + ":" + sourceItem.getProductId() + ":" + rule.getSourceSpecKey();
+                    if (warnedKeys == null) {
+                        warnedKeys = new HashSet<>();
+                    }
+                    if (warnedKeys.add(warnKey)) {
+                        log.warn("Missing source spec key [{}] on product [{}] when evaluating rule [{}]",
+                                rule.getSourceSpecKey(), sourceItem.getProductId(), rule.getRuleName());
+                        RuleSeverity warnSev = rule.getSeverity() == RuleSeverity.INFO ? RuleSeverity.INFO : RuleSeverity.WARNING;
+                        violations.add(ViolationDetail.builder()
+                                .ruleId(rule.getRuleId())
+                                .ruleName(rule.getRuleName())
+                                .severity(warnSev)
+                                .message("Không thể xác minh quy tắc '" + rule.getRuleName() + "': sản phẩm '"
+                                        + sourceItem.getProductName() + "' chưa khai báo thông số '" + rule.getSourceSpecKey() + "'.")
+                                .sourceProduct(toProductReference(sourceItem))
+                                .targetProduct(null)
+                                .build());
+                    }
                     continue;
                 }
 
@@ -105,8 +140,24 @@ public class RuleEvaluator {
                     if (targetItem == null) continue;
                     Object targetValue = targetItem.getSpecs() != null ? targetItem.getSpecs().get(rule.getTargetSpecKey()) : null;
                     if (targetValue == null) {
-                        log.warn("Missing target spec key [{}] on product [{}] when evaluating rule [{}]",
-                                rule.getTargetSpecKey(), targetItem.getProductId(), rule.getRuleName());
+                        String warnKey = rule.getRuleId() + ":" + targetItem.getProductId() + ":" + rule.getTargetSpecKey();
+                        if (warnedKeys == null) {
+                            warnedKeys = new HashSet<>();
+                        }
+                        if (warnedKeys.add(warnKey)) {
+                            log.warn("Missing target spec key [{}] on product [{}] when evaluating rule [{}]",
+                                    rule.getTargetSpecKey(), targetItem.getProductId(), rule.getRuleName());
+                            RuleSeverity warnSev = rule.getSeverity() == RuleSeverity.INFO ? RuleSeverity.INFO : RuleSeverity.WARNING;
+                            violations.add(ViolationDetail.builder()
+                                    .ruleId(rule.getRuleId())
+                                    .ruleName(rule.getRuleName())
+                                    .severity(warnSev)
+                                    .message("Không thể xác minh quy tắc '" + rule.getRuleName() + "': sản phẩm '"
+                                            + targetItem.getProductName() + "' chưa khai báo thông số '" + rule.getTargetSpecKey() + "'.")
+                                    .sourceProduct(toProductReference(sourceItem))
+                                    .targetProduct(toProductReference(targetItem))
+                                    .build());
+                        }
                         continue;
                     }
 

@@ -45,10 +45,19 @@ public class EqualsOperatorStrategy implements OperatorStrategy {
         if (val == null) return null;
         if (val instanceof BigDecimal bd) return bd;
         if (val instanceof Number n) {
-            return BigDecimal.valueOf(n.doubleValue());
+            double d = n.doubleValue();
+            if (!Double.isFinite(d)) return null;
+            try {
+                return BigDecimal.valueOf(d);
+            } catch (Exception e) {
+                return null;
+            }
         }
         try {
-            return new BigDecimal(val.toString().trim());
+            String s = val.toString().trim();
+            double d = Double.parseDouble(s);
+            if (!Double.isFinite(d)) return null;
+            return new BigDecimal(s);
         } catch (Exception e) {
             return null;
         }

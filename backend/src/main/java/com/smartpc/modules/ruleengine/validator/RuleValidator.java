@@ -161,6 +161,23 @@ public class RuleValidator {
                         "Khóa tổng hợp không hợp lệ: " + srcKey,
                         List.of(new FieldErrorDTO("source_spec_key", "Chỉ hỗ trợ _count, _sum_capacity_gb, _total_tdp_w, _sum_<field>, _max_<field>")));
             }
+            if (!isBuiltin && dynMatcher.matches()) {
+                String dynField = dynMatcher.group(2);
+                if (!SYSTEM_CATEGORY.equals(srcCat)) {
+                    Map<String, FieldDefinition> srcSchema = specSchemaRegistry.getSchemaAsMap(srcCat);
+                    FieldDefinition fieldDef = srcSchema.get(dynField);
+                    if (fieldDef == null) {
+                        throw new BusinessException(ErrorCode.RULE_UNKNOWN_AGGREGATE_KEY,
+                                "Trường '" + dynField + "' trong khóa tổng hợp '" + srcKey + "' không tồn tại trong schema danh mục nguồn '" + srcCat + "'",
+                                List.of(new FieldErrorDTO("source_spec_key", "Trường '" + dynField + "' không tồn tại trong danh mục " + srcCat)));
+                    }
+                    if (fieldDef.getType() != FieldType.NUMBER && fieldDef.getType() != FieldType.INTEGER) {
+                        throw new BusinessException(ErrorCode.RULE_UNKNOWN_AGGREGATE_KEY,
+                                "Trường '" + dynField + "' trong khóa tổng hợp '" + srcKey + "' phải là kiểu số (NUMBER/INTEGER), nhưng có kiểu " + fieldDef.getType(),
+                                List.of(new FieldErrorDTO("source_spec_key", "Trường '" + dynField + "' không phải kiểu số")));
+                    }
+                }
+            }
         }
 
         // 3. Validate Operator & Data Type Compatibility

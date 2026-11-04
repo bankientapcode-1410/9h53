@@ -44,7 +44,9 @@ public enum ErrorCode {
     RULE_INVALID_TEMPLATE_SYNTAX(HttpStatus.BAD_REQUEST, "Mẫu thông báo lỗi phải từ 10 đến 500 ký tự và có cặp dấu ngoặc nhọn '{}' cân bằng"),
     RULE_UNKNOWN_PLACEHOLDER(HttpStatus.BAD_REQUEST, "Mẫu thông báo lỗi chứa biến nội suy không nằm trong danh sách hỗ trợ"),
     RULE_DUPLICATE_DEFINITION(HttpStatus.CONFLICT, "Quy tắc tương thích với cùng cặp danh mục, khóa thông số và toán tử này đã tồn tại"),
-    RULE_DRY_RUN_EMPTY_PRODUCTS(HttpStatus.BAD_REQUEST, "Vui lòng chọn ít nhất một sản phẩm mẫu để chạy thử quy tắc");
+    RULE_DRY_RUN_EMPTY_PRODUCTS(HttpStatus.BAD_REQUEST, "Vui lòng chọn ít nhất một sản phẩm mẫu để chạy thử quy tắc"),
+    RULE_CHECK_TOO_MANY_PRODUCTS(HttpStatus.BAD_REQUEST, "Số lượng sản phẩm khác nhau trong một lần kiểm tra tương thích vượt quá giới hạn cho phép"),
+    RULE_CHECK_QUANTITY_EXCEEDED(HttpStatus.BAD_REQUEST, "Số lượng của một sản phẩm trong cấu hình vượt quá giới hạn cho phép");
 
     private final HttpStatus httpStatus;
     private final String defaultMessage;

@@ -2,6 +2,8 @@ package com.smartpc.modules.product.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,11 +36,12 @@ public class ProductEmbedding {
     @Builder.Default
     private String embeddingModel = "text-embedding-004";
 
-    @Column(name = "dimensions", nullable = false)
+    @JdbcTypeCode(SqlTypes.SMALLINT)
+    @Column(name = "dimensions", columnDefinition = "smallint unsigned", nullable = false)
     @Builder.Default
     private Integer dimensions = 768;
 
-    @Column(name = "content_hash", length = 64, nullable = false)
+    @Column(name = "content_hash", columnDefinition = "char(64)", length = 64, nullable = false)
     private String contentHash;
 
     @Column(name = "synced_at", nullable = false)

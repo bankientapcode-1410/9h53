@@ -124,4 +124,40 @@ class AggregateCalculatorTest {
         // _max_capacity_gb = 2000
         assertEquals(2000.0, aggregates.get("SSD_M2:_max_capacity_gb"));
     }
+
+    @Test
+    @DisplayName("TC-RE-18: _count không bị tràn số âm khi quantity lớn")
+    void testCountOverflowSafety() {
+        ProductItemContext hugeRam = ProductItemContext.builder()
+                .productId("ram-huge")
+                .productName("Huge RAM Kit")
+                .categoryCode("RAM")
+                .quantity(Integer.MAX_VALUE)
+                .specs(Map.of("modules_per_kit", 2))
+                .build();
+
+        Map<String, Object> aggregates = calculator.calculateAggregates(List.of(hugeRam));
+        assertNotNull(aggregates);
+        int count = (Integer) aggregates.get("RAM:_count");
+        assertTrue(count > 0, "_count phải luôn dương và không tràn sang số âm");
+        assertEquals(Integer.MAX_VALUE, count, "Khi vượt quá Integer.MAX_VALUE, count phải được chặn trần");
+    }
+
+    @Test
+    @DisplayName("TC-RE-19: Xử lý an toàn khi thông số là NaN hoặc Infinity")
+    void testNanAndInfinityHandling() {
+        ProductItemContext weirdGpu = ProductItemContext.builder()
+                .productId("gpu-weird")
+                .productName("Weird GPU")
+                .categoryCode("GPU")
+                .quantity(1)
+                .specs(Map.of("tdp_w", "NaN", "vram_gb", Double.POSITIVE_INFINITY))
+                .build();
+
+        Map<String, Object> aggregates = calculator.calculateAggregates(List.of(weirdGpu));
+        assertNotNull(aggregates);
+        double totalTdp = (Double) aggregates.get("_SYSTEM:_total_tdp_w");
+        assertTrue(Double.isFinite(totalTdp), "Tổng công suất TDP phải là số hữu hạn");
+        assertEquals(50.0, totalTdp, "TDP không cộng dồn NaN, giữ nguyên base overhead 50W");
+    }
 }

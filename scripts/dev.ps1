@@ -15,7 +15,7 @@
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("menu", "check", "ui", "backend", "full", "docker", "infra", "setup-db", "stop", "help")]
+    [ValidateSet("menu", "check", "ui", "backend", "full", "docker", "infra", "setup-db", "seed", "stop", "help")]
     [string]$Mode = "menu",
 
     [switch]$NoBrowser
@@ -399,9 +399,22 @@ FLUSH PRIVILEGES;
     & $status.MySqlExe -u root -p -e $sqlStatements
     if ($LASTEXITCODE -eq 0) {
         Write-Host "[OK] Database 'smartpc_db' and user 'smartpc_user' are ready!" -ForegroundColor Green
+        # Auto-seed rules & warehouse products
+        Seed-WarehouseInventory
     } else {
         Write-Host "[ERROR] Failed to initialize MySQL database. Please verify your root password." -ForegroundColor Red
         exit 30
+    }
+}
+
+function Seed-WarehouseInventory {
+    $seedScript = Join-Path $ScriptDir "seed-inventory.ps1"
+    if (Test-Path $seedScript) {
+        Write-Host "[INFO] Seeding warehouse product inventory..." -ForegroundColor Cyan
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $seedScript -Target auto
+    } else {
+        Write-Host "[ERROR] Seeding script not found: $seedScript" -ForegroundColor Red
+        exit 31
     }
 }
 
@@ -452,7 +465,8 @@ function Show-Help {
     Write-Host "    ui         Start Frontend React/Vite dev server on http://localhost:3000"
     Write-Host "    backend    Start Spring Boot Backend on http://localhost:8080"
     Write-Host "    full       Start Backend + Frontend together (auto-fallback to UI if no JDK)"
-    Write-Host "    setup-db   Create 'smartpc_db' and 'smartpc_user' in local Windows MySQL 8.0"
+    Write-Host "    setup-db   Create 'smartpc_db' & 'smartpc_user' and seed warehouse products"
+    Write-Host "    seed       Seed warehouse hardware products & rules into database (Local/Docker)"
     Write-Host "    docker     Start full stack via 'docker compose up -d'"
     Write-Host "    infra      Start only MySQL, Redis, Mailhog containers via Docker"
     Write-Host "    check      Run pre-flight environment & port diagnostics"
@@ -469,12 +483,13 @@ function Show-InteractiveMenu {
     Write-Host "    [2] Start Full Local Dev (Backend :8080 + Frontend :3000)" -ForegroundColor Cyan
     Write-Host "    [3] Start Backend Only (Spring Boot :8080)" -ForegroundColor White
     Write-Host "    [4] Setup Local MySQL Database (Create smartpc_db & smartpc_user)" -ForegroundColor White
-    Write-Host "    [5] Start Full Stack via Docker Compose (docker compose up -d)" -ForegroundColor White
-    Write-Host "    [6] Stop All Running Services (Free ports 3000 & 8080)" -ForegroundColor White
+    Write-Host "    [5] Seed Warehouse Products & Rules (Populate Kho hàng)" -ForegroundColor Yellow
+    Write-Host "    [6] Start Full Stack via Docker Compose (docker compose up -d)" -ForegroundColor White
+    Write-Host "    [7] Stop All Running Services (Free ports 3000 & 8080)" -ForegroundColor White
     Write-Host "    [0] Exit" -ForegroundColor DarkGray
     Write-Host ""
 
-    $choice = Read-Host "  Enter option [0-6] (Press Enter for [1])"
+    $choice = Read-Host "  Enter option [0-7] (Press Enter for [1])"
     if ([string]::IsNullOrWhiteSpace($choice)) {
         $choice = "1"
     }
@@ -484,8 +499,9 @@ function Show-InteractiveMenu {
         "2" { Start-FullStackLocal }
         "3" { Start-BackendService }
         "4" { Initialize-LocalDatabase }
-        "5" { Start-DockerEnvironment -InfraOnly $false }
-        "6" { Stop-AllDevServices }
+        "5" { Seed-WarehouseInventory }
+        "6" { Start-DockerEnvironment -InfraOnly $false }
+        "7" { Stop-AllDevServices }
         "0" { Write-Host "Exiting." -ForegroundColor DarkGray; exit 0 }
         default {
             Write-Host "[WARN] Invalid option '$choice'." -ForegroundColor Yellow
@@ -506,6 +522,7 @@ switch ($Mode) {
     "docker"   { Start-DockerEnvironment -InfraOnly $false }
     "infra"    { Start-DockerEnvironment -InfraOnly $true }
     "setup-db" { Initialize-LocalDatabase }
+    "seed"     { Seed-WarehouseInventory }
     "stop"     { Stop-AllDevServices }
     "help"     { Show-Help }
 }

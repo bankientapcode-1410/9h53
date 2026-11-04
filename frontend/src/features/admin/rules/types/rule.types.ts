@@ -127,4 +127,5 @@ export interface CompatibilityResult {
   errors: CompatibilityViolation[];
   warnings: CompatibilityViolation[];
   info: CompatibilityViolation[];
+  unresolved_product_ids?: string[];
 }

@@ -1,6 +1,7 @@
 package com.smartpc.modules.ruleengine.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -19,6 +20,7 @@ public class CompatibilityItemRequest {
     private String productId;
 
     @Min(value = 1, message = "Số lượng linh kiện tối thiểu là 1")
+    @Max(value = 16, message = "Số lượng linh kiện tối đa là 16")
     @Builder.Default
     @JsonProperty("quantity")
     private Integer quantity = 1;

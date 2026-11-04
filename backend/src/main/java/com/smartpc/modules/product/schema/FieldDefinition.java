@@ -20,4 +20,12 @@ public class FieldDefinition {
     private String unit;
     private Double minValue;
     private List<String> allowedValues;
+
+    public String getFieldName() {
+        return key;
+    }
+
+    public String getDisplayName() {
+        return label;
+    }
 }

@@ -41,9 +41,12 @@ backend/.mvn/wrapper/maven-wrapper.jar
 
 # Environment Variables & Secrets
 .env
+.env.*
+*.env
+**/.env
+**/.env.*
 .env.local
 .env.*.local
-*.env
 application-local.yml
 application-secrets.yml
 

@@ -6,9 +6,13 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class RangeOperatorStrategy implements OperatorStrategy {
+
+    private static final Pattern RANGE_PATTERN = Pattern.compile("^\\s*(-?\\d+(?:\\.\\d+)?)\\s*-\\s*(-?\\d+(?:\\.\\d+)?)\\s*$");
 
     @Override
     public RuleOperator getOperator() {
@@ -44,7 +48,7 @@ public class RangeOperatorStrategy implements OperatorStrategy {
             min = EqualsOperatorStrategy.tryToBigDecimal(minObj);
             max = EqualsOperatorStrategy.tryToBigDecimal(maxObj);
         }
-        // 3. String: "min..max" or "min-max"
+        // 3. String: "min..max" or "min-max" (including negative bounds like "-5-10" or "-10--5")
         else if (targetValue instanceof String str) {
             String s = str.trim();
             if (s.contains("..")) {
@@ -53,11 +57,11 @@ public class RangeOperatorStrategy implements OperatorStrategy {
                     min = EqualsOperatorStrategy.tryToBigDecimal(parts[0]);
                     max = EqualsOperatorStrategy.tryToBigDecimal(parts[1]);
                 }
-            } else if (s.contains("-")) {
-                String[] parts = s.split("-");
-                if (parts.length >= 2) {
-                    min = EqualsOperatorStrategy.tryToBigDecimal(parts[0]);
-                    max = EqualsOperatorStrategy.tryToBigDecimal(parts[1]);
+            } else {
+                Matcher m = RANGE_PATTERN.matcher(s);
+                if (m.matches()) {
+                    min = EqualsOperatorStrategy.tryToBigDecimal(m.group(1));
+                    max = EqualsOperatorStrategy.tryToBigDecimal(m.group(2));
                 }
             }
         }

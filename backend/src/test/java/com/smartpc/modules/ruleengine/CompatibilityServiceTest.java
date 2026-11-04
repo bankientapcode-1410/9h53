@@ -1,5 +1,7 @@
 package com.smartpc.modules.ruleengine;
 
+import com.smartpc.common.exception.BusinessException;
+import com.smartpc.common.exception.ErrorCode;
 import com.smartpc.modules.product.entity.Category;
 import com.smartpc.modules.product.entity.Product;
 import com.smartpc.modules.product.repository.ProductRepository;
@@ -22,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
@@ -169,5 +172,87 @@ class CompatibilityServiceTest {
         assertNotNull(result);
         assertTrue(result.isCompatible(), "Thiếu spec tùy chọn phải an toàn bỏ qua và không chặn build");
         assertTrue(result.getErrors().isEmpty());
+        assertEquals(1, result.getWarnings().size(), "Phải sinh 1 cảnh báo WARNING không thể xác minh khi thiếu thông số");
+        assertTrue(result.getWarnings().get(0).getMessage().contains("Không thể xác minh"));
+    }
+
+    @Test
+    @DisplayName("TC-RE-14: Chặn request có hơn 30 sản phẩm phân biệt (RULE_CHECK_TOO_MANY_PRODUCTS)")
+    void testTooManyProductsViolation() {
+        Map<String, Integer> productQuantities = new LinkedHashMap<>();
+        for (int i = 1; i <= 31; i++) {
+            productQuantities.put("prod-" + i, 1);
+        }
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> compatibilityService.checkCompatibilityWithQuantities(productQuantities));
+
+        assertEquals(ErrorCode.RULE_CHECK_TOO_MANY_PRODUCTS.getCode(), ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("TC-RE-15: Chặn quantity của một sản phẩm vượt quá 16 (RULE_CHECK_QUANTITY_EXCEEDED)")
+    void testQuantityExceededViolation() {
+        Map<String, Integer> productQuantities = Map.of("prod-01", 17);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> compatibilityService.checkCompatibilityWithQuantities(productQuantities));
+
+        assertEquals(ErrorCode.RULE_CHECK_QUANTITY_EXCEEDED.getCode(), ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("TC-RE-16: Trả về unresolved_product_ids khi sản phẩm không tìm thấy hoặc inactive")
+    void testUnresolvedProductIds() {
+        // Prepare Rules
+        PreIndexedRuleCache cache = new PreIndexedRuleCache(Map.of(), List.of());
+        when(ruleCacheManager.getPreIndexedRules()).thenReturn(cache);
+
+        // Requested: p1 and p-missing
+        Category cpuCat = Category.builder().categoryCode("CPU").build();
+        Product cpu = Product.builder()
+                .productId("p1")
+                .name("CPU 1")
+                .category(cpuCat)
+                .specs(Map.of())
+                .build();
+
+        // Repository only returns p1 (p-missing is inactive or not found)
+        when(productRepository.findAllActiveWithCategoryByIds(anyCollection()))
+                .thenReturn(List.of(cpu));
+
+        CompatibilityResult result = compatibilityService.checkCompatibilityWithQuantities(
+                Map.of("p1", 1, "p-missing", 1)
+        );
+
+        assertNotNull(result);
+        assertTrue(result.isCompatible());
+        assertEquals(1, result.getUnresolvedProductIds().size());
+        assertEquals("p-missing", result.getUnresolvedProductIds().get(0));
+    }
+
+    @Test
+    @DisplayName("TC-RE-20: categoryCode = null không gây NullPointerException")
+    void testNullCategoryCodeSafety() {
+        PreIndexedRuleCache cache = new PreIndexedRuleCache(Map.of(), List.of());
+        when(ruleCacheManager.getPreIndexedRules()).thenReturn(cache);
+
+        Category nullCat = Category.builder().categoryCode(null).build();
+        Product weirdProduct = Product.builder()
+                .productId("p-weird")
+                .name("Weird Item")
+                .category(nullCat)
+                .specs(Map.of())
+                .build();
+
+        when(productRepository.findAllActiveWithCategoryByIds(anyCollection()))
+                .thenReturn(List.of(weirdProduct));
+
+        CompatibilityResult result = assertDoesNotThrow(
+                () -> compatibilityService.checkCompatibility(List.of("p-weird"))
+        );
+
+        assertNotNull(result);
+        assertTrue(result.isCompatible());
     }
 }

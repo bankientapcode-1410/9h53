@@ -25,7 +25,8 @@ export const CategoryBrowsePage: React.FC = () => {
     toggleBrand,
     clearBrands,
     toggleSpec,
-    clearSpec,
+    setSpec,
+    clearAllSpecs,
     setPriceRange,
     setSort,
     setPage,
@@ -210,8 +211,6 @@ export const CategoryBrowsePage: React.FC = () => {
         maxPrice={filters.max_price}
         onToggleBrand={toggleBrand}
         onClearBrands={clearBrands}
-        onToggleSpec={toggleSpec}
-        onClearSpec={clearSpec}
         onSetPriceRange={setPriceRange}
         onResetFilters={resetFilters}
       />
@@ -220,9 +219,11 @@ export const CategoryBrowsePage: React.FC = () => {
       {filters.category && specMetadata && (
         <DynamicSpecsFilterPanel
           specMetadata={specMetadata}
+          facets={facets}
           activeSpecs={filters.specs}
           onToggleSpec={toggleSpec}
-          onClearSpecs={resetFilters}
+          onSetSpec={setSpec}
+          onClearSpecs={clearAllSpecs}
         />
       )}
 

@@ -129,4 +129,37 @@ class OperatorStrategyTest {
         assertTrue(rangeStrategy.evaluate(1.25, "1.1-1.4"));
         assertFalse(rangeStrategy.evaluate(1.05, "1.1..1.4"));
     }
+
+    @Test
+    @DisplayName("TC-RE-19: EqualsOperatorStrategy và Lte/Gte xử lý an toàn NaN / Infinity không ném Exception")
+    void testNanAndInfinityStrategyHandling() {
+        assertFalse(equalsStrategy.evaluate(Double.NaN, 1));
+        assertFalse(equalsStrategy.evaluate(Double.POSITIVE_INFINITY, 1));
+        assertFalse(equalsStrategy.evaluate("NaN", "10"));
+        assertFalse(lteStrategy.evaluate(Double.NaN, 100));
+        assertFalse(lteStrategy.evaluate(Double.POSITIVE_INFINITY, 100));
+        assertFalse(gteStrategy.evaluate(Double.NaN, 100));
+    }
+
+    @Test
+    @DisplayName("TC-RE-21: RangeOperatorStrategy hỗ trợ dải giá trị có cận âm")
+    void testRangeWithNegativeBounds() {
+        // Cận âm: -5 đến 10
+        assertTrue(rangeStrategy.evaluate(-3, "-5-10"));
+        assertTrue(rangeStrategy.evaluate(0, "-5-10"));
+        assertTrue(rangeStrategy.evaluate(10, "-5-10"));
+        assertFalse(rangeStrategy.evaluate(-6, "-5-10"));
+        assertFalse(rangeStrategy.evaluate(11, "-5-10"));
+
+        // Cả 2 cận âm: -10 đến -5
+        assertTrue(rangeStrategy.evaluate(-7, "-10--5"));
+        assertTrue(rangeStrategy.evaluate(-10, "-10--5"));
+        assertTrue(rangeStrategy.evaluate(-5, "-10--5"));
+        assertFalse(rangeStrategy.evaluate(-4, "-10--5"));
+        assertFalse(rangeStrategy.evaluate(-11, "-10--5"));
+
+        // Dạng .. với số âm
+        assertTrue(rangeStrategy.evaluate(-3, "-5..10"));
+        assertTrue(rangeStrategy.evaluate(-7, "-10..-5"));
+    }
 }

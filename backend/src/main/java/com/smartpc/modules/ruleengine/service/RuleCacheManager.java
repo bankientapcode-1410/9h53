@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.*;
 
@@ -36,6 +38,23 @@ public class RuleCacheManager {
     public void evictAll() {
         log.info("Evicting all rules from in-memory Caffeine cache");
         ruleCaffeineCache.invalidateAll();
+    }
+
+    /**
+     * Xóa cache sau khi transaction hiện tại commit thành công (DD-UC6 §4.5.B.3).
+     * Nếu không có transaction nào đang active, xóa cache ngay lập tức.
+     */
+    public void evictAllAfterCommit() {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    evictAll();
+                }
+            });
+        } else {
+            evictAll();
+        }
     }
 
     private PreIndexedRuleCache loadAndIndexFromDb() {

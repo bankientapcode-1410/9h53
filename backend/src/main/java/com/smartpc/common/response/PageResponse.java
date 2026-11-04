@@ -80,4 +80,27 @@ public class PageResponse<T> {
                 .last(page.isLast())
                 .build();
     }
+
+    public static <T> PageResponse<T> fromPage(Page<?> page, List<T> content) {
+        if (page == null) {
+            return PageResponse.<T>builder()
+                    .content(content != null ? content : Collections.emptyList())
+                    .page(0)
+                    .size(0)
+                    .totalElements(0)
+                    .totalPages(0)
+                    .first(true)
+                    .last(true)
+                    .build();
+        }
+        return PageResponse.<T>builder()
+                .content(content != null ? content : Collections.emptyList())
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .first(page.isFirst())
+                .last(page.isLast())
+                .build();
+    }
 }

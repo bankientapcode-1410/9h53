@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,9 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoryTreeDTO {
+public class CategoryTreeDTO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @JsonProperty("category_id")
     private String categoryId;

@@ -131,7 +131,7 @@ class CompatRuleAdminServiceTest {
     }
 
     @Test
-    @DisplayName("TC-RE-12: Đồng bộ Cache - Mọi thao tác tạo, cập nhật trạng thái, xóa đều gọi ruleCacheManager.evictAll()")
+    @DisplayName("TC-RE-12: Đồng bộ Cache - Mọi thao tác tạo, cập nhật trạng thái, xóa đều gọi ruleCacheManager.evictAllAfterCommit()")
     void testCacheEvictionOnMutations() {
         CompatRule existingRule = CompatRule.builder()
                 .ruleId("r-test-01")
@@ -153,12 +153,12 @@ class CompatRuleAdminServiceTest {
         // 1. Toggle status
         CompatRuleDTO toggled = adminService.updateRuleStatus("r-test-01", false);
         assertFalse(toggled.getIsActive());
-        verify(ruleCacheManager, times(1)).evictAll();
+        verify(ruleCacheManager, times(1)).evictAllAfterCommit();
 
         // 2. Delete rule
         adminService.deleteRule("r-test-01");
         verify(ruleRepository, times(1)).delete(existingRule);
-        verify(ruleCacheManager, times(2)).evictAll();
+        verify(ruleCacheManager, times(2)).evictAllAfterCommit();
 
         // 3. Create rule
         CreateCompatRuleRequest createReq = CreateCompatRuleRequest.builder()
@@ -175,6 +175,6 @@ class CompatRuleAdminServiceTest {
                 .build();
 
         adminService.createRule(createReq);
-        verify(ruleCacheManager, times(3)).evictAll();
+        verify(ruleCacheManager, times(3)).evictAllAfterCommit();
     }
 }

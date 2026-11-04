@@ -26,7 +26,7 @@ public class AggregateCalculator {
         }
 
         double totalTdpW = 0.0;
-        Map<String, Integer> countsByCategory = new HashMap<>();
+        Map<String, Long> countsByCategory = new HashMap<>();
         Map<String, Double> capacityByCategory = new HashMap<>();
         Map<String, Double> dynamicSums = new HashMap<>();
         Map<String, Double> dynamicMaxs = new HashMap<>();
@@ -37,21 +37,25 @@ public class AggregateCalculator {
             int quantity = Math.max(1, item.getQuantity());
             Map<String, Object> specs = item.getSpecs() != null ? item.getSpecs() : Collections.emptyMap();
 
-            // 1. Physical slots count: quantity * max(1, modules_per_kit)
+            // 1. Physical slots count: quantity * max(1, modules_per_kit) computed with long to prevent overflow
             int modulesPerKit = toInt(specs.get("modules_per_kit"), 1);
-            int effectiveModules = quantity * Math.max(1, modulesPerKit);
-            countsByCategory.put(cat, countsByCategory.getOrDefault(cat, 0) + effectiveModules);
+            long effectiveModules = (long) quantity * Math.max(1, modulesPerKit);
+            long currentCount = countsByCategory.getOrDefault(cat, 0L);
+            long updatedCount = Math.min((long) Integer.MAX_VALUE, currentCount + effectiveModules);
+            countsByCategory.put(cat, updatedCount);
 
             // 2. Memory capacity sum: quantity * capacity_gb
             double capGb = toDouble(specs.get("capacity_gb"), 0.0);
-            if (capGb > 0.0) {
-                capacityByCategory.put(cat, capacityByCategory.getOrDefault(cat, 0.0) + (quantity * capGb));
+            if (capGb > 0.0 && Double.isFinite(capGb)) {
+                capacityByCategory.put(cat, capacityByCategory.getOrDefault(cat, 0.0) + ((double) quantity * capGb));
             }
 
             // 3. Power TDP calculation (exclude PSU & CPU_COOLER)
             if (!EXCLUDED_TDP_CATEGORIES.contains(cat)) {
                 double tdp = toDouble(specs.get("tdp_w"), 0.0);
-                totalTdpW += (quantity * tdp);
+                if (Double.isFinite(tdp)) {
+                    totalTdpW += ((double) quantity * tdp);
+                }
             }
 
             // 4. Dynamic aggregates: _sum_<field> and _max_<field> for all numeric specs
@@ -59,11 +63,11 @@ public class AggregateCalculator {
                 String field = entry.getKey();
                 if (field == null || field.startsWith("_")) continue;
                 Double numVal = tryExtractNumber(entry.getValue());
-                if (numVal != null) {
+                if (numVal != null && Double.isFinite(numVal)) {
                     String sumKey = cat + ":_sum_" + field.toLowerCase();
                     String maxKey = cat + ":_max_" + field.toLowerCase();
 
-                    dynamicSums.put(sumKey, dynamicSums.getOrDefault(sumKey, 0.0) + (quantity * numVal));
+                    dynamicSums.put(sumKey, dynamicSums.getOrDefault(sumKey, 0.0) + ((double) quantity * numVal));
                     double currentMax = dynamicMaxs.getOrDefault(maxKey, Double.NEGATIVE_INFINITY);
                     if (numVal > currentMax) {
                         dynamicMaxs.put(maxKey, numVal);
@@ -77,7 +81,7 @@ public class AggregateCalculator {
         aggregates.put(SYSTEM_CATEGORY + ":" + TOTAL_TDP_KEY, finalTotalTdp);
         aggregates.put("CPU:" + TOTAL_TDP_KEY, finalTotalTdp); // Compatibility with V2 seed rules
 
-        countsByCategory.forEach((cat, cnt) -> aggregates.put(cat + ":" + COUNT_KEY, cnt));
+        countsByCategory.forEach((cat, cnt) -> aggregates.put(cat + ":" + COUNT_KEY, cnt.intValue()));
         capacityByCategory.forEach((cat, cap) -> aggregates.put(cat + ":" + SUM_CAPACITY_GB_KEY, cap));
         dynamicSums.forEach(aggregates::put);
         dynamicMaxs.forEach(aggregates::put);
@@ -87,7 +91,11 @@ public class AggregateCalculator {
 
     private int toInt(Object value, int defaultVal) {
         if (value == null) return defaultVal;
-        if (value instanceof Number n) return n.intValue();
+        if (value instanceof Number n) {
+            double d = n.doubleValue();
+            if (!Double.isFinite(d)) return defaultVal;
+            return n.intValue();
+        }
         try {
             return Integer.parseInt(value.toString().trim());
         } catch (NumberFormatException e) {
@@ -97,19 +105,27 @@ public class AggregateCalculator {
 
     private double toDouble(Object value, double defaultVal) {
         if (value == null) return defaultVal;
-        if (value instanceof Number n) return n.doubleValue();
+        if (value instanceof Number n) {
+            double d = n.doubleValue();
+            return Double.isFinite(d) ? d : defaultVal;
+        }
         try {
-            return Double.parseDouble(value.toString().trim());
-        } catch (NumberFormatException e) {
+            double d = Double.parseDouble(value.toString().trim());
+            return Double.isFinite(d) ? d : defaultVal;
+        } catch (Exception e) {
             return defaultVal;
         }
     }
 
     private Double tryExtractNumber(Object value) {
         if (value == null) return null;
-        if (value instanceof Number n) return n.doubleValue();
+        if (value instanceof Number n) {
+            double d = n.doubleValue();
+            return Double.isFinite(d) ? d : null;
+        }
         try {
-            return Double.parseDouble(value.toString().trim());
+            double d = Double.parseDouble(value.toString().trim());
+            return Double.isFinite(d) ? d : null;
         } catch (Exception e) {
             return null;
         }

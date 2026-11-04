@@ -152,6 +152,29 @@ export function useProductFilter() {
     [updateParams]
   );
 
+  const setSpec = useCallback(
+    (specKey: string, value: string | null) => {
+      const paramKey = `specs[${specKey}]`;
+      if (!value) {
+        updateParams({ [paramKey]: null });
+      } else {
+        updateParams({ [paramKey]: value });
+      }
+    },
+    [updateParams]
+  );
+
+  const clearAllSpecs = useCallback(() => {
+    const current = new URLSearchParams(searchParams);
+    for (const key of Array.from(current.keys())) {
+      if (key.startsWith('specs[')) {
+        current.delete(key);
+      }
+    }
+    current.delete('page');
+    setSearchParams(current, { replace: false });
+  }, [searchParams, setSearchParams]);
+
   const setPriceRange = useCallback(
     (min?: number, max?: number) => {
       const validMin =
@@ -199,7 +222,9 @@ export function useProductFilter() {
     toggleBrand,
     clearBrands,
     toggleSpec,
+    setSpec,
     clearSpec,
+    clearAllSpecs,
     setPriceRange,
     setSort,
     setPage,

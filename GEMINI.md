@@ -90,7 +90,7 @@ flowchart TD
 ### 3.1. Lập Kế hoạch Triển khai khi Phát triển Trọn vẹn một UC (Implementation Plan)
 
 > [!IMPORTANT]
-> Khi yêu cầu của User là **triển khai toàn bộ một Use-Case / phân hệ** (VD: "làm UC2 PC Builder", "implement UC4"), AI Agent **BẮT BUỘC** phải lập **Kế hoạch Triển khai (Implementation Plan)** sau khi DD đã hoàn thiện và **trước khi viết code**. Tuyệt đối không triển khai cả UC trong một lượt code duy nhất.
+> Khi yêu cầu của User là **triển khai toàn bộ một Use-Case / phân hệ** (VD: "làm UC2 PC Builder", "implement UC4"), AI Agent **BẮT BUỘC** phải lập **Kế hoạch Triển khai (Implementation Plan)** sau khi DD đã hoàn thiện và **trước khi viết code**.
 
 * **Vị trí lưu trữ:** `docs/implementation-plan/plan-<ma-usecase-hoac-ten-module>.md` (cùng hậu tố với file DD, VD: `dd-uc2-pc-builder.md` $\rightarrow$ `plan-uc2-pc-builder.md`).
 * **Nguồn phân rã:** Dùng **WBS tại mục `7. Cấu trúc Phân rã Công việc (WBS)` của [sdd.md](sdd.md)** làm khung. Mỗi nhánh lá của WBS trong UC tương ứng một **Work Package** mang mã `7.x.y` (khớp với mục `4. Thiết kế Chi tiết theo Tác vụ WBS` trong DD, VD: `7.4.1` $\rightarrow$ `7.4.5` của UC6).
@@ -158,3 +158,26 @@ flowchart TD
 4. **Tầng 3 — Thanh Ngữ cảnh theo Route (Storefront vs Admin):**
    * **Trên các route Storefront:** Thanh danh mục phổ biến (`bg-slate-50/90 px-4 py-2`) hiển thị nhãn `Phổ biến:` kèm danh sách 8 danh mục chuẩn (`CPU`, `GPU`, `MOTHERBOARD`, `RAM`, `SSD_M2`, `PSU`, `CASE`, `CPU_COOLER`) dẫn tới `/products?category=<code>`, bên phải là badge `AI Compatibility Engine V4.2 Sẵn sàng` và `Bảo hành 36T 1 đổi 1 tận nơi`.
    * **Trên các route Admin (`/admin/*`):** Thanh submenu quản trị nền vàng sáng (`bg-amber-50/90 border-t border-amber-200/80`) gồm nhãn `Portal Quản Trị:` và các lối tắt `Linh kiện & Vector Specs (UC5)` (`/admin/products`), `Cây Danh Mục (2 Cấp)` (`/admin/categories`).
+
+---
+
+## 5. Quy chuẩn Tự động Đồng bộ & Chạy lại Ứng dụng sau khi Sửa Code (Live Reload & Container Update Rule)
+
+> [!IMPORTANT]
+> **BẮT BUỘC CẬP NHẬT LẠI ỨNG DỤNG / CONTAINER SAU MỖI LẦN SỬA CODE:**
+> Môi trường phát triển của dự án đang chạy qua Docker container (Nginx frontend phục vụ cổng `3000` và Spring Boot backend phục vụ cổng `8080`). Do đó, sau mỗi lần chỉnh sửa mã nguồn, AI Agent **BẮT BUỘC PHẢI CHẠY LẠI / ĐỒNG BỘ ĐỂ CẬP NHẬT THAY ĐỔI MỚI NHẤT LÊN TRANG**:
+> 
+> 1. **Đối với Frontend (`frontend/`):**
+>    * Sau khi sửa đổi code React/TypeScript, phải lập tức:
+>      1. Chạy `npm --prefix frontend run build` để kiểm tra TypeScript và biên dịch bundle mới vào `frontend/dist`.
+>      2. Đẩy ngay bản build vào container đang chạy và reload Nginx:
+>         ```bash
+>         docker cp frontend/dist/. smartpc-frontend:/usr/share/nginx/html/
+>         docker exec smartpc-frontend nginx -s reload
+>         ```
+>      3. Đồng thời build lại Docker image để đồng bộ lâu dài: `docker compose build frontend` (và `docker compose up -d frontend` nếu cần).
+>    * **Tuyệt đối không dừng lại ở việc sửa file trên host mà không cập nhật vào container**, tránh tình trạng người dùng mở trang vẫn thấy giao diện cũ chưa cập nhật.
+> 2. **Đối với Backend (`backend/`):**
+>    * Khi chỉnh sửa mã nguồn Java, config hoặc migration Flyway SQL: kiểm tra biên dịch bằng Maven và cập nhật/khởi động lại container backend (`docker compose restart backend` hoặc `docker compose build backend && docker compose up -d backend`).
+> 3. **Hướng dẫn Người dùng:**
+>    * Luôn thông báo rõ trạng thái cập nhật và nhắc người dùng bấm `Ctrl + F5` (hoặc `Cmd + Shift + R`) trên trình duyệt để xóa cache tĩnh của trình duyệt.

@@ -54,7 +54,7 @@ class RuleValidatorTest {
                 .build();
 
         BusinessException ex1 = assertThrows(BusinessException.class, () -> validator.validateForCreate(selfReq));
-        assertEquals(ErrorCode.RULE_SELF_REFERENCE, ex1.getErrorCode());
+        assertEquals(ErrorCode.RULE_SELF_REFERENCE.getCode(), ex1.getErrorCode());
 
         // Unknown target category
         when(categoryRepository.existsByCategoryCode("UNKNOWN")).thenReturn(false);
@@ -72,7 +72,7 @@ class RuleValidatorTest {
                 .build();
 
         BusinessException ex2 = assertThrows(BusinessException.class, () -> validator.validateForCreate(unknownTgtReq));
-        assertEquals(ErrorCode.RULE_INVALID_CATEGORY, ex2.getErrorCode());
+        assertEquals(ErrorCode.RULE_INVALID_CATEGORY.getCode(), ex2.getErrorCode());
     }
 
     @Test
@@ -94,7 +94,7 @@ class RuleValidatorTest {
                 .build();
 
         BusinessException ex1 = assertThrows(BusinessException.class, () -> validator.validateForCreate(aggInReq));
-        assertEquals(ErrorCode.RULE_INCOMPATIBLE_OPERATOR, ex1.getErrorCode());
+        assertEquals(ErrorCode.RULE_INCOMPATIBLE_OPERATOR.getCode(), ex1.getErrorCode());
 
         // 2. target_spec_key with type INTEGER (ram_slots) cannot use IN operator (requires ARRAY_STRING)
         CreateCompatRuleRequest typeMismatchReq = CreateCompatRuleRequest.builder()
@@ -109,7 +109,7 @@ class RuleValidatorTest {
                 .build();
 
         BusinessException ex2 = assertThrows(BusinessException.class, () -> validator.validateForCreate(typeMismatchReq));
-        assertEquals(ErrorCode.RULE_INCOMPATIBLE_OPERATOR, ex2.getErrorCode());
+        assertEquals(ErrorCode.RULE_INCOMPATIBLE_OPERATOR.getCode(), ex2.getErrorCode());
     }
 
     @Test
@@ -131,7 +131,7 @@ class RuleValidatorTest {
                 .build();
 
         BusinessException ex1 = assertThrows(BusinessException.class, () -> validator.validateForCreate(unclosedReq));
-        assertEquals(ErrorCode.RULE_INVALID_TEMPLATE_SYNTAX, ex1.getErrorCode());
+        assertEquals(ErrorCode.RULE_INVALID_TEMPLATE_SYNTAX.getCode(), ex1.getErrorCode());
 
         // Unknown placeholder
         CreateCompatRuleRequest unknownPhReq = CreateCompatRuleRequest.builder()
@@ -146,7 +146,7 @@ class RuleValidatorTest {
                 .build();
 
         BusinessException ex2 = assertThrows(BusinessException.class, () -> validator.validateForCreate(unknownPhReq));
-        assertEquals(ErrorCode.RULE_UNKNOWN_PLACEHOLDER, ex2.getErrorCode());
+        assertEquals(ErrorCode.RULE_UNKNOWN_PLACEHOLDER.getCode(), ex2.getErrorCode());
     }
 
     @Test
@@ -172,7 +172,7 @@ class RuleValidatorTest {
                 .build();
 
         BusinessException ex = assertThrows(BusinessException.class, () -> validator.validateForCreate(dupReq));
-        assertEquals(ErrorCode.RULE_DUPLICATE_DEFINITION, ex.getErrorCode());
+        assertEquals(ErrorCode.RULE_DUPLICATE_DEFINITION.getCode(), ex.getErrorCode());
     }
 
     @Test
@@ -195,5 +195,42 @@ class RuleValidatorTest {
                 .build();
 
         assertDoesNotThrow(() -> validator.validateForCreate(validReq));
+    }
+
+    @Test
+    @DisplayName("TC-RE-23: RuleValidator đối chiếu dynamic aggregate _sum_/_max_<field> với schema nguồn")
+    void testDynamicAggregateSchemaValidation() {
+        when(categoryRepository.existsByCategoryCode("GPU")).thenReturn(true);
+        when(categoryRepository.existsByCategoryCode("CASE")).thenReturn(true);
+
+        // Field 'not_exist_field' does not exist in GPU schema
+        CreateCompatRuleRequest nonExistentFieldReq = CreateCompatRuleRequest.builder()
+                .ruleName("Dynamic Agg Non-Existent Field")
+                .sourceCategory("GPU")
+                .targetCategory("CASE")
+                .sourceSpecKey("_sum_not_exist_field")
+                .targetSpecKey("max_gpu_length_mm")
+                .operator(RuleOperator.LTE)
+                .severity(RuleSeverity.ERROR)
+                .errorMessageTemplate("Tổng thông số không tồn tại vượt quá giới hạn thùng máy")
+                .build();
+
+        BusinessException ex1 = assertThrows(BusinessException.class, () -> validator.validateForCreate(nonExistentFieldReq));
+        assertEquals(ErrorCode.RULE_UNKNOWN_AGGREGATE_KEY.getCode(), ex1.getErrorCode());
+
+        // Field 'bus_interface' exists in GPU schema but has type STRING (not NUMBER/INTEGER)
+        CreateCompatRuleRequest nonNumericFieldReq = CreateCompatRuleRequest.builder()
+                .ruleName("Dynamic Agg Non-Numeric Field")
+                .sourceCategory("GPU")
+                .targetCategory("CASE")
+                .sourceSpecKey("_sum_bus_interface")
+                .targetSpecKey("max_gpu_length_mm")
+                .operator(RuleOperator.LTE)
+                .severity(RuleSeverity.ERROR)
+                .errorMessageTemplate("Không thể tổng hợp trường kiểu chuỗi bus_interface")
+                .build();
+
+        BusinessException ex2 = assertThrows(BusinessException.class, () -> validator.validateForCreate(nonNumericFieldReq));
+        assertEquals(ErrorCode.RULE_UNKNOWN_AGGREGATE_KEY.getCode(), ex2.getErrorCode());
     }
 }

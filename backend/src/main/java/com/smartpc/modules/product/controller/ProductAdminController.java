@@ -115,7 +115,7 @@ public class ProductAdminController {
     ) {
         BatchSyncAcceptedDTO result = productAdminService.triggerBatchSync(request.getProductIds());
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(
-                ApiResponse.builder()
+                ApiResponse.<BatchSyncAcceptedDTO>builder()
                         .success(true)
                         .statusCode(HttpStatus.ACCEPTED.value())
                         .message("Đã tiếp nhận yêu cầu đồng bộ lại " + result.getAccepted() + " sản phẩm")

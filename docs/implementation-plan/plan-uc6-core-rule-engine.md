@@ -132,3 +132,22 @@ flowchart TD
    * *Giải pháp:* `AggregateCalculator` loại trừ cụ thể danh mục `CPU_COOLER` và `PSU` khi tính tổng TDP tiêu thụ, tránh việc cộng nhầm công suất giải nhiệt của tản nhiệt vào công suất tiêu thụ điện của linh kiện.
 3. **Rủi ro Lệch Schema giữa Backend và Seed Rules cũ:**
    * *Giải pháp:* `AggregateCalculator` và `RuleEvaluator` hỗ trợ cả `_SYSTEM:_total_tdp_w` và `CPU:_total_tdp_w`, đảm bảo tương thích 100% với các rule đã seed từ `V2__seed_rules.sql`.
+
+
+---
+
+## 5. Đợt Gia cố An toàn & Ổn định (Hardening — DD `v1.2`, Mục 4.6)
+
+> Hạng mục phân quyền `ROLE_ADMIN` cho `/api/v1/admin/rules/**` **hoãn** tới khi hoàn thành UC0 (chưa có hệ thống Role).
+
+| Mã Task | Work Package WBS | Tầng | Mô tả công việc | File / Class tác động | Tham chiếu DD | Phụ thuộc | Tiêu chí hoàn thành (DoD) | Trạng thái |
+| :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- | :---: |
+| **`7.4.1.12`** | 7.4.1 Quản lý Tập luật | `DOMAIN` | Thêm mã lỗi `RULE_CHECK_TOO_MANY_PRODUCTS`, `RULE_CHECK_QUANTITY_EXCEEDED` | `ErrorCode.java` | DD §7 | — | Compile pass | `DONE` |
+| **`7.4.1.13`** | 7.4.1 Quản lý Tập luật | `API` | `@Valid` + `@Size(max=100)` cho request, `@Max(16)` quantity; kẹp phân trang; handler `400` cho JSON/enum/param lỗi | `CompatibilityController.java`, `CompatibilityCheckRequest.java`, `CompatibilityItemRequest.java`, `DryRunRuleRequest.java`, `CompatRuleAdminController.java`, `GlobalExceptionHandler.java` | DD §4.6.A, §4.6.E | `7.4.1.12` | `TC-RE-22` pass | `DONE` |
+| **`7.4.3.6`** | 7.4.3 Evaluator & Toán tử | `SERVICE` | `CompatibilityService`: `validateRequestBounds()`, bỏ `@Transactional` & executor, đánh giá tuần tự, sao chép specs, `unresolved_product_ids`, null-safe category | `CompatibilityService.java`, `CompatibilityResult.java`, `RuleEngineConfig.java` | DD §4.5.B, §4.6.A–C | `7.4.1.12` | `TC-RE-14..16`, `TC-RE-20` pass | `DONE` |
+| **`7.4.3.7`** | 7.4.3 Evaluator & Toán tử | `SERVICE` | `RuleEvaluator`: cảnh báo "Không thể xác minh..." khi thiếu spec (khử trùng lặp) | `RuleEvaluator.java` | DD §4.3.C | `7.4.3.6` | `TC-RE-10` (cập nhật) pass | `DONE` |
+| **`7.4.3.8`** | 7.4.3 Evaluator & Toán tử | `SERVICE` | Chuyển đổi số an toàn (`NaN`/`Infinity`), `RANGE` cận âm | `EqualsOperatorStrategy.java`, `RangeOperatorStrategy.java` | DD §4.3.A | — | `TC-RE-19`, `TC-RE-21` pass | `DONE` |
+| **`7.4.4.2`** | 7.4.4 Aggregate Calculator | `SERVICE` | `_count` tính bằng `long` + chặn trần; chỉ nhận số hữu hạn | `AggregateCalculator.java` | DD §4.4.B.5 | — | `TC-RE-18`, `TC-RE-19` pass | `DONE` |
+| **`7.4.5.3`** | 7.4.5 Cache & Concurrency | `SERVICE` | `RuleCacheManager.evictAllAfterCommit()`; `CompatRuleAdminService` dùng hàm mới; dry-run áp giới hạn | `RuleCacheManager.java`, `CompatRuleAdminService.java` | DD §4.5.B.3 | `7.4.3.6` | `TC-RE-12` (cập nhật), `TC-RE-17` pass | `DONE` |
+| **`7.4.2.3`** | 7.4.2 Validate cấu trúc Luật | `SERVICE` | Đối chiếu `_sum_/_max_<field>` với Registry (tồn tại & kiểu số) | `RuleValidator.java` | DD §4.6.D | — | `TC-RE-23` pass | `DONE` |
+| **`7.4.5.4`** | 7.4.5 Cache & Concurrency | `TEST` | Cập nhật & bổ sung Unit Test `TC-RE-10`, `TC-RE-12..23` | `*Test.java` trong `ruleengine` | DD §8 | Tất cả task trên | `mvn test` pass toàn bộ | `DONE` |

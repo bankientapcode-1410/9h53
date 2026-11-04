@@ -2,7 +2,7 @@
 ## Phân hệ: Core Rule Engine - Quản lý Tập luật & Đánh giá Tương thích Phần cứng (UC6 & WBS 7.4)
 
 * **Mã tài liệu:** `DD-UC6-RULE-ENGINE`
-* **Phiên bản:** `v1.1` (Bản chuẩn hóa toàn diện & đồng bộ với `V1__init_schema.sql`, `V2__seed_rules.sql`, `V3__product_catalog.sql` và `DD-UC5-PRODUCT-CATALOG v1.1` — xem [Phụ lục A](#phụ-lục-a-lịch-sử-hiệu-chỉnh-v10--v11))
+* **Phiên bản:** `v1.2` (Gia cố An toàn & Ổn định — Security/Stability Hardening, xem [Mục 4.6](#46-gia-cố-an-toàn--ổn-định-hardening-v12) và [Phụ lục B](#phụ-lục-b-lịch-sử-hiệu-chỉnh-v11--v12)). Bản `v1.1`: chuẩn hóa toàn diện & đồng bộ với `V1__init_schema.sql`, `V2__seed_rules.sql`, `V3__product_catalog.sql` và `DD-UC5-PRODUCT-CATALOG v1.1` — xem [Phụ lục A](#phụ-lục-a-lịch-sử-hiệu-chỉnh-v10--v11))
 * **Phân hệ (Package):** `com.smartpc.modules.ruleengine` (Backend) & `src/features/admin/rules` (Frontend)
 * **Liên kết Use-Case:**
   * `UC6` (Quản lý Tập Luật Tương thích — Admin CRUD, Validation 5 bước, Dry-Run Sandbox, Cache Eviction)
@@ -20,7 +20,7 @@ Phân hệ **Core Rule Engine** là bộ máy suy diễn tính tương thích ph
 1. **Zero-Code Rule Configuration (UC6 & WBS 7.4.1):** Quản trị viên (Admin) có thể thêm mới, chỉnh sửa, bật/tắt (`is_active`), thay đổi độ ưu tiên (`priority`) hoặc xóa quy tắc tương thích trên giao diện quản trị (`/admin/rules`) mà không cần biên dịch lại mã nguồn hay khởi động lại hệ thống.
 2. **Độ trễ cực thấp (Ultra-low Latency $< 2\text{ms}$ P99 - WBS 7.4.3, 7.4.5):**
    * Tập luật đang hoạt động (`is_active = true`) được lưu trong **Caffeine Cache** dưới cấu trúc bất biến `PreIndexedRuleCache` gom nhóm sẵn theo cặp `"SOURCE_CATEGORY:TARGET_CATEGORY"` và sắp xếp theo `priority ASC`.
-   * Khi kiểm tra cấu hình PC, `CompatibilityService` chỉ nạp các cặp danh mục thực sự xuất hiện trong cấu hình (cộng với nhóm luật toàn hệ thống `_SYSTEM`) và đánh giá song song trên `ruleEngineExecutor`.
+   * Khi kiểm tra cấu hình PC, `CompatibilityService` chỉ nạp các cặp danh mục thực sự xuất hiện trong cấu hình (cộng với nhóm luật toàn hệ thống `_SYSTEM`) và đánh giá **tuần tự trên luồng gọi** (v1.2: bỏ `ruleEngineExecutor` vì mỗi luật chỉ tốn vài micro-giây, overhead đa luồng lớn hơn lợi ích và gây tranh chấp pool dùng chung — xem Mục 4.6).
 3. **An toàn dữ liệu & Đồng bộ chặt với `CategorySpecSchemaRegistry` (WBS 7.4.2):**
    * Bộ `RuleValidator` kiểm tra 5 bước nghiêm ngặt (Danh mục lá hợp lệ, cú pháp `spec_key` & đối chiếu chéo với `CategorySpecSchemaRegistry` của UC5, tính tương thích giữa kiểu dữ liệu trường thông số / khóa tổng hợp với toán tử `RuleOperator`, cú pháp mẫu thông báo lỗi `error_message_template`, và chống trùng lặp quy tắc).
    * Tích hợp công cụ chạy thử **Dry-Run Sandbox** (`POST /api/v1/admin/rules/dry-run`) cho phép Admin kiểm chứng quy tắc mới với các sản phẩm thực tế trong kho trước khi lưu.
@@ -36,7 +36,7 @@ Phân hệ **Core Rule Engine** là bộ máy suy diễn tính tương thích ph
 ```text
 backend/src/main/java/com/smartpc/modules/ruleengine/
 ├── config/
-│   └── RuleEngineConfig.java                # Khai báo Caffeine Cache cho Rules & ThreadPool ruleEngineExecutor
+│   └── RuleEngineConfig.java                # Khai báo Caffeine Cache cho Rules (v1.2: đã bỏ ThreadPool ruleEngineExecutor)
 ├── controller/
 │   ├── CompatRuleAdminController.java       # REST API quản trị tập luật (UC6 - ROLE_ADMIN: /api/v1/admin/rules)
 │   └── CompatibilityController.java         # REST API kiểm tra tương thích công khai (UC2/UC4: /api/v1/compatibility)
@@ -157,10 +157,12 @@ classDiagram
         -RuleCacheManager ruleCacheManager
         -AggregateCalculator aggregateCalculator
         -RuleEvaluator ruleEvaluator
-        -Executor ruleEngineExecutor
+        +MAX_DISTINCT_PRODUCTS = 30$
+        +MAX_QUANTITY_PER_PRODUCT = 16$
         +checkCompatibility(List~String~ productIds) CompatibilityResult
         +checkCompatibilityWithQuantities(Map~String, Integer~ productQuantities) CompatibilityResult
         +evaluateContexts(List~ProductItemContext~ contexts) CompatibilityResult
+        +validateRequestBounds(Map~String, Integer~ productQuantities)$ void
     }
 
     class RuleValidator {
@@ -179,6 +181,7 @@ classDiagram
         +getPreIndexedRules() PreIndexedRuleCache
         +getRulesForPair(String sourceCat, String targetCat) List~CompatRule~
         +evictAll() void
+        +evictAllAfterCommit() void
     }
 
     class AggregateCalculator {
@@ -292,7 +295,7 @@ sequenceDiagram
         Val-->>Svc: Validation Passed
         Svc->>DB: INSERT INTO compat_rules (...)
         DB-->>Svc: Saved CompatRule Entity
-        Svc->>Cache: evictAll() (sau khi ghi DB thành công)
+        Svc->>Cache: evictAllAfterCommit() (đăng ký xóa Cache SAU KHI transaction COMMIT thành công - v1.2)
         Cache->>Cache: ruleCaffeineCache.invalidateAll()
         Cache-->>Svc: Đã xóa Cache In-Memory
         Svc-->>Ctrl: CompatRuleDTO
@@ -315,8 +318,13 @@ sequenceDiagram
     participant Strat as OperatorStrategy
 
     Caller->>CompatSvc: checkCompatibilityWithQuantities(productQuantities)
-    CompatSvc->>DB: findAllWithCategoryByIds(productIds) (chỉ lấy is_active=true, deleted_at IS NULL)
+    CompatSvc->>CompatSvc: validateRequestBounds() (≤ 30 sản phẩm phân biệt, quantity 1..16)
+    alt Vượt giới hạn
+        CompatSvc-->>Caller: BusinessException RULE_CHECK_TOO_MANY_PRODUCTS / RULE_CHECK_QUANTITY_EXCEEDED (400)
+    end
+    CompatSvc->>DB: findAllActiveWithCategoryByIds(productIds) (transaction ngắn của Repository, KHÔNG giữ connection khi đánh giá)
     DB-->>CompatSvc: Danh sách Products + Category + JSON Specs
+    CompatSvc->>CompatSvc: Sao chép specs sang ProductItemContext, ghi nhận unresolved_product_ids (ID không tồn tại / inactive)
 
     CompatSvc->>Cache: getPreIndexedRules()
     alt Cache Hit (99.9% requests)
@@ -333,8 +341,11 @@ sequenceDiagram
 
     CompatSvc->>CompatSvc: Lọc các cặp (SourceCat, TargetCat) xuất hiện trong cấu hình + cặp ("_SYSTEM", TargetCat)
 
-    par Đánh giá song song từng cặp Category trên ruleEngineExecutor (CompletableFuture)
+    loop Đánh giá tuần tự từng luật theo priority ASC trên luồng gọi (v1.2 - bỏ ruleEngineExecutor)
         CompatSvc->>Eval: evaluateRule(rule, sourceItems, targetItems, aggregates)
+        opt Thiếu thông số nguồn/đích
+            Eval-->>CompatSvc: ViolationDetail WARNING "Không thể xác minh..." (hoặc INFO nếu luật là INFO)
+        end
         Eval->>Eval: Trích xuất sourceValue (từ JSON specs hoặc từ aggregates nếu key bắt đầu bằng '_')
         Eval->>Eval: Trích xuất targetValue (từ JSON specs của linh kiện đích)
         Eval->>Strat: evaluate(sourceValue, targetValue)
@@ -347,7 +358,7 @@ sequenceDiagram
 
     CompatSvc->>CompatSvc: Hợp nhất kết quả theo đúng thứ tự priority ASC
     CompatSvc->>CompatSvc: Phân loại vào errors[], warnings[], info[]
-    CompatSvc-->>Caller: CompatibilityResult (isCompatible = errors.isEmpty())
+    CompatSvc-->>Caller: CompatibilityResult (isCompatible = errors.isEmpty(), unresolved_product_ids)
 ```
 
 ---
@@ -642,7 +653,9 @@ Mỗi toán tử cài đặt interface `OperatorStrategy` (`boolean evaluate(Obj
 | **`NotInOperatorStrategy`** | `NOT_IN` | - Phủ định kết quả của `InOperatorStrategy`: Trả về `!inOperatorStrategy.evaluate(sourceValue, targetValue)`. |
 | **`LteOperatorStrategy`** | `LTE` ($\le$) | - Ép kiểu an toàn cả `sourceValue` và `targetValue` sang `BigDecimal`.<br>- Trả về `srcDec.compareTo(tgtDec) <= 0`. Nếu một trong hai không phải số hợp lệ $\rightarrow$ trả về `false`. |
 | **`GteOperatorStrategy`** | `GTE` ($\ge$) | - Ép kiểu an toàn cả `sourceValue` và `targetValue` sang `BigDecimal`.<br>- Trả về `srcDec.compareTo(tgtDec) >= 0`. |
-| **`RangeOperatorStrategy`** | `RANGE` | - `sourceValue` là số (`BigDecimal`).<br>- `targetValue` trong JSON có thể là: (1) `List<?>` 2 phần tử `[min, max]` (VD: `[1.1, 1.4]`), (2) `Map<?, ?>` có khóa `"min"` và `"max"`, hoặc (3) Chuỗi `"min..max"` / `"min-max"`.<br>- Trả về `srcDec.compareTo(min) >= 0 && srcDec.compareTo(max) <= 0`. |
+| **`RangeOperatorStrategy`** | `RANGE` | - `sourceValue` là số (`BigDecimal`).<br>- `targetValue` trong JSON có thể là: (1) `List<?>` 2 phần tử `[min, max]` (VD: `[1.1, 1.4]`), (2) `Map<?, ?>` có khóa `"min"` và `"max"`, hoặc (3) Chuỗi `"min..max"` / `"min-max"`. **(v1.2)** Dạng `"min-max"` được phân tích bằng regex `^\s*(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)\s*$` để hỗ trợ cận âm (VD: `"-5-10"`, `"-10--5"`).<br>- Trả về `srcDec.compareTo(min) >= 0 && srcDec.compareTo(max) <= 0`. |
+
+> **(v1.2) Chuyển đổi số an toàn (`EqualsOperatorStrategy.tryToBigDecimal`)** dùng chung cho mọi strategy: giá trị `Double`/`Float` là `NaN` hoặc `±Infinity` $\rightarrow$ trả về `null` (coi như không phải số) thay vì để `BigDecimal.valueOf()` ném `NumberFormatException`; mọi chuyển đổi đều nằm trong `try/catch`.
 
 #### B. Phân biệt Quy tắc Cấp Linh kiện (Item-level) và Quy tắc Cấp Tổng hợp (Aggregate-level)
 Trong `RuleEvaluator.evaluateRule(rule, sourceItems, targetItems, aggregates)`:
@@ -659,11 +672,15 @@ Trong `RuleEvaluator.evaluateRule(rule, sourceItems, targetItems, aggregates)`:
    * Trích xuất `sourceValue = sourceItem.getSpecs().get(rule.getSourceSpecKey())` và `targetValue = targetItem.getSpecs().get(rule.getTargetSpecKey())`.
 
 #### C. Chính sách An toàn khi Thiếu Thông số (`Null-Safety & Missing Spec Policy`)
-1. **Trong luồng kiểm tra tương thích sản xuất (`CompatibilityService`):**
+1. **Trong luồng kiểm tra tương thích sản xuất (`CompatibilityService`) — (v1.2: chuyển từ "fail-open im lặng" sang "cảnh báo không chặn"):**
    * Khi `sourceValue == null` hoặc `targetValue == null`:
      * **Tuyệt đối không ném Exception** làm gián đoạn luồng PC Builder hay Checkout.
-     * Ghi log cảnh báo `log.warn("Missing spec key [{}] or [{}] when evaluating rule [{}] between [{}] and [{}]", ...)` để Admin rà soát dữ liệu.
-     * Bỏ qua cặp đó (coi như không vi phạm).
+     * Ghi log cảnh báo `log.warn(...)` để Admin rà soát dữ liệu.
+     * **Sinh 1 `ViolationDetail` "không thể xác minh"** cho cặp đó (không còn bỏ qua im lặng): `severity = WARNING` nếu luật gốc là `ERROR`/`WARNING`, `severity = INFO` nếu luật gốc là `INFO`; `message = "Không thể xác minh quy tắc '<rule_name>': sản phẩm '<product_name>' chưa khai báo thông số '<spec_key>'."`; `source_product`/`target_product` gán như vi phạm thường.
+     * Vì là `WARNING`/`INFO`, cảnh báo này **không** làm `is_compatible = false` (không chặn build), nhưng hiển thị rõ cho người dùng/Admin biết cấu hình chưa được xác minh đầy đủ.
+     * Khử trùng lặp: tối đa 1 cảnh báo cho mỗi bộ `(rule_id, product_id, spec_key)` trong một lần đánh giá.
+   * Giá trị không ép kiểu được (VD: chuỗi không phải số với `LTE`/`GTE`) vẫn giữ hành vi `false` $\rightarrow$ vi phạm theo `severity` của luật (fail-closed).
+   * **Sản phẩm không tồn tại / inactive / đã xóa mềm:** không còn bị bỏ qua im lặng — danh sách ID được trả về trong trường `unresolved_product_ids` của `CompatibilityResult` (Mục 5.2.A).
 2. **Trong luồng Chạy thử của Admin (`Dry-Run Sandbox`):**
    * Nếu thiếu `source_spec_key` hoặc `target_spec_key` trên sản phẩm mẫu mà Admin chọn, hệ thống ghi nhận vào danh sách `missing_spec_warnings` trong `DryRunResultDTO` (VD: `"Sản phẩm 'MSI MAG B760M' chưa khai báo thông số 'max_pcie_gen' trong JSON specs"`) để Admin phát hiện ngay.
 
@@ -705,6 +722,10 @@ Khi `strategy.evaluate(sourceValue, targetValue)` trả về `false`, `RuleEvalu
 4. **Hỗ trợ Khóa Tổng hợp Động (`<CATEGORY>:_sum_<field>` và `<CATEGORY>:_max_<field>`):**
    * Khi quét qua `specs` của từng linh kiện thuộc danh mục $C$, mọi trường kiểu số (`Number`) đều được tự động cộng dồn (nhân với `quantity`) vào khóa `C:_sum_<field>` và cập nhật giá trị cực đại vào `C:_max_<field>`.
    * Độ phức tạp thuật toán: `O(N * K)` với $N \le 15$ linh kiện và $K \le 10$ thông số mỗi linh kiện, thời gian thực thi $< 0.02\text{ms}$.
+5. **(v1.2) An toàn số học:**
+   * `Count(C)` tính bằng `long` và chặn trần tại `Integer.MAX_VALUE` (không bao giờ tràn số âm). Đầu vào `quantity` đã được giới hạn `1..16` ở tầng API/Service (Mục 4.6).
+   * `toDouble()` / `tryExtractNumber()` chỉ chấp nhận giá trị **hữu hạn** (`Double.isFinite`); các giá trị `"NaN"`, `"Infinity"` bị coi như không phải số (dùng giá trị mặc định / bỏ qua) và các tổng `_sum_*` không hữu hạn sẽ không được ghi vào `aggregates`.
+   * Mã danh mục `null` được chuẩn hóa thành `"UNKNOWN"` trước khi gom nhóm.
 
 ---
 
@@ -755,10 +776,65 @@ public final class PreIndexedRuleCache {
 1. **Caffeine Cache (`ruleCaffeineCache`):**
    * `Caffeine.newBuilder().maximumSize(16).expireAfterWrite(1, TimeUnit.HOURS).recordStats().build()`.
    * Khi gọi `ruleCacheManager.getPreIndexedRules()`, phương thức `ruleCaffeineCache.get("ACTIVE_RULES", key -> loadAndIndexFromDb())` đảm bảo tính **nguyên tử (Single-Flight / Anti-Cache-Stampede)**: nếu Cache vừa bị xóa và có 50 request `checkCompatibility` đến cùng lúc, chỉ có duy nhất 1 luồng truy vấn MySQL, 49 luồng còn lại nhận chung kết quả `PreIndexedRuleCache`.
-2. **Thread Pool Đánh giá Song song (`ruleEngineExecutor`):**
-   * Khai báo `@Bean(name = "ruleEngineExecutor")` trong `RuleEngineConfig` (hoặc `AsyncConfig`):
-     * `corePoolSize = 4`, `maxPoolSize = 8`, `queueCapacity = 200`, `threadNamePrefix = "rule-eval-"`.
-     * `RejectedExecutionHandler = new ThreadPoolExecutor.CallerRunsPolicy()`: Khác với `vectorSyncExecutor` (tác vụ I/O mạng nặng sang AI), việc đánh giá tập luật hoàn toàn diễn ra trong bộ nhớ RAM ($< 0.5\text{ms}$), nên nếu hàng đợi đầy vào giờ cao điểm, việc luồng gọi tự đánh giá (`CallerRunsPolicy`) vừa đảm bảo không bao giờ rơi lỗi 503 vừa giữ độ trễ dưới $1\text{ms}$.
+2. **~~Thread Pool Đánh giá Song song (`ruleEngineExecutor`)~~ — ĐÃ BỎ ở v1.2:**
+   * Bản `v1.1` khai báo `ruleEngineExecutor` (`core=4`, `max=8`, `queue=200`, `CallerRunsPolicy`) và bọc mỗi luật trong `CompletableFuture.supplyAsync()`.
+   * Lý do loại bỏ: mỗi luật chỉ tốn vài micro-giây trong RAM, chi phí lập lịch đa luồng lớn hơn chi phí đánh giá; mọi request dùng chung 8 luồng nên dưới tải cao gây tranh chấp; `join()` không timeout. `CompatibilityService.evaluateContexts()` nay đánh giá **tuần tự theo `priority ASC`** trên luồng của request — kết quả xác định (deterministic) và giữ mục tiêu P99 $< 2\text{ms}$ (`TC-RE-13`).
+3. **Đồng bộ Cache sau Commit (v1.2):**
+   * `RuleCacheManager.evictAllAfterCommit()`: nếu đang trong transaction đồng bộ (`TransactionSynchronizationManager.isSynchronizationActive()`), đăng ký `TransactionSynchronization.afterCommit()` để gọi `evictAll()`; nếu không có transaction thì xóa ngay.
+   * Mọi thao tác ghi của `CompatRuleAdminService` (`createRule`, `updateRule`, `updateRuleStatus`, `deleteRule`) gọi `evictAllAfterCommit()` thay vì `evictAll()` để tránh race: request đọc chen giữa lúc xóa cache và lúc commit sẽ nạp lại **dữ liệu cũ** và giữ nó trong Cache tới 1 giờ.
+
+---
+
+### 4.6. Gia cố An toàn & Ổn định (Hardening v1.2)
+
+Kết quả rà soát mã nguồn UC6 (11/2026) phát hiện các rủi ro logic/bảo mật/sập server. Bảng dưới đây là thiết kế khắc phục bắt buộc (trừ hạng mục phân quyền `ROLE_ADMIN` cho `/api/v1/admin/rules/**` — **hoãn tới khi hoàn thành UC0 Auth & Security**, hiện mọi endpoint vẫn `permitAll`).
+
+#### A. Giới hạn Đầu vào cho `POST /api/v1/compatibility/check` (chống DoS / OOM)
+
+| Ràng buộc | Giá trị | Tầng kiểm tra | Mã lỗi |
+| :--- | :---: | :--- | :--- |
+| Số phần tử mảng `product_ids` | `≤ 100` | `@Size(max = 100)` trên `CompatibilityCheckRequest.productIds` + `@Valid` ở Controller | `VALIDATION_ERROR` (400) |
+| Số phần tử mảng `items` | `≤ 100` | `@Size(max = 100)` + `@Valid` cascade | `VALIDATION_ERROR` (400) |
+| `items[].quantity` | `1..16` | `@Min(1) @Max(16)` | `VALIDATION_ERROR` (400) |
+| Số sản phẩm **phân biệt** sau khi gộp | `≤ 30` (`MAX_DISTINCT_PRODUCTS`) | `CompatibilityService.validateRequestBounds()` | `RULE_CHECK_TOO_MANY_PRODUCTS` (400) |
+| Tổng `quantity` cộng dồn của 1 sản phẩm (từ `product_ids` lặp + `items`) | `1..16` (`MAX_QUANTITY_PER_PRODUCT`) | `validateRequestBounds()` (cộng dồn bằng `long`, không tràn số) | `RULE_CHECK_QUANTITY_EXCEEDED` (400) |
+| Độ dài mỗi `product_id` | `≤ 64` ký tự | `validateRequestBounds()` | `VALIDATION_ERROR` (400) |
+
+* Với $\le 30$ sản phẩm, số phép so sánh của luật cấp linh kiện bị chặn ở $15 \times 15 = 225$ mỗi luật — loại bỏ hoàn toàn bùng nổ $N \times M$.
+* `dryRun()` của Admin áp dụng cùng `validateRequestBounds()` cho `test_product_ids` + `test_items`.
+
+#### B. Quản lý Transaction & Connection
+* `checkCompatibility()` / `checkCompatibilityWithQuantities()` **không còn** `@Transactional`. Việc nạp sản phẩm dùng transaction ngắn của Repository (`findAllActiveWithCategoryByIds`), specs được **sao chép** (`new LinkedHashMap<>(specs)`) vào `ProductItemContext`, sau đó đánh giá thuần trong RAM — connection Hikari được trả lại pool trước khi đánh giá luật.
+* Bỏ `ruleEngineExecutor` (Mục 4.5.B) — không còn `CompletableFuture.join()` không timeout.
+
+#### C. Kết quả bổ sung `unresolved_product_ids`
+* `CompatibilityResult.unresolvedProductIds: List<String>` (JSON `unresolved_product_ids`) — các ID được yêu cầu nhưng không tìm thấy sản phẩm `is_active = true AND deleted_at IS NULL`. Trường luôn có mặt (mảng rỗng nếu không có). Không ảnh hưởng `is_compatible`.
+
+#### D. Bổ sung `RuleValidator` — Khóa Tổng hợp Động
+* Với `source_spec_key` dạng `_sum_<field>` / `_max_<field>` (không thuộc builtin `_count`, `_sum_capacity_gb`, `_total_tdp_w`): `<field>` **phải tồn tại** trong `CategorySpecSchemaRegistry` của `source_category` và có kiểu `NUMBER`/`INTEGER`; nếu không $\rightarrow$ `RULE_UNKNOWN_AGGREGATE_KEY` (400).
+
+#### E. Phân trang & Xử lý Ngoại lệ Toàn cục
+* `GET /api/v1/admin/rules`: `page < 0` $\rightarrow$ `0`; `size` bị kẹp trong `[1, 100]`.
+* `GlobalExceptionHandler` bổ sung:
+  * `HttpMessageNotReadableException` (JSON hỏng, enum không hợp lệ trong body) $\rightarrow$ `400 BAD_REQUEST`, message cố định `"Định dạng dữ liệu yêu cầu không hợp lệ"`, log mức `WARN` (không in stack trace).
+  * `MethodArgumentTypeMismatchException` (VD: `?severity=FOO`, `?page=abc`) $\rightarrow$ `400 BAD_REQUEST`, message `"Tham số '<name>' không hợp lệ"`, log `WARN`.
+  * `MissingServletRequestParameterException` $\rightarrow$ `400 BAD_REQUEST`.
+
+#### F. Ma trận Truy vết Phát hiện $\rightarrow$ Khắc phục
+
+| # Phát hiện | Nội dung | Khắc phục (Mục) | Test Case |
+| :---: | :--- | :--- | :--- |
+| 1 | Admin API không xác thực | **Hoãn** — phụ thuộc UC0 | — |
+| 2 | DoS do đầu vào không giới hạn ($N \times M$) | 4.6.A | `TC-RE-14`, `TC-RE-15` |
+| 3 | Fail-open khi thiếu spec / ID không tồn tại | 4.3.C, 4.6.C | `TC-RE-10` (cập nhật), `TC-RE-16` |
+| 4 | Race xóa Cache trước Commit | 4.5.B.3 | `TC-RE-12` (cập nhật), `TC-RE-17` |
+| 5 | Tràn số `quantity` / `_count` | 4.4.B.5, 4.6.A | `TC-RE-15`, `TC-RE-18` |
+| 6 | Giữ DB connection khi đánh giá | 4.6.B | `TC-RE-13` |
+| 7 | `NaN`/`Infinity` gây `NumberFormatException` | 4.3.A, 4.4.B.5 | `TC-RE-19` |
+| 8 | NPE khi `categoryCode == null` | 4.4.B.5 | `TC-RE-20` |
+| 9 | `RANGE` sai với cận âm | 4.3.A | `TC-RE-21` |
+| 10 | `size` phân trang không giới hạn; JSON/enum lỗi trả 500 | 4.6.E | `TC-RE-22` |
+| 11 | `_sum_/_max_<field>` không đối chiếu schema | 4.6.D | `TC-RE-23` |
 
 ---
 
@@ -843,9 +919,20 @@ Endpoint hỗ trợ linh hoạt cả 2 cách truyền đầu vào:
         }
       }
     ],
-    "info": []
+    "info": [],
+    "unresolved_product_ids": []
   },
   "timestamp": "2026-10-24T23:30:00"
+}
+```
+
+**Response lỗi vượt giới hạn (`400 Bad Request`, v1.2):**
+```json
+{
+  "success": false,
+  "status_code": 400,
+  "error_code": "RULE_CHECK_TOO_MANY_PRODUCTS",
+  "message": "Số lượng sản phẩm khác nhau trong một lần kiểm tra tương thích vượt quá giới hạn 30"
 }
 ```
 
@@ -1058,6 +1145,8 @@ Các mã lỗi thuộc phân hệ Core Rule Engine (UC6) được định nghĩa
 | **`RULE_UNKNOWN_PLACEHOLDER`** | `400` | `"Mẫu thông báo lỗi chứa biến nội suy không nằm trong danh sách hỗ trợ"` | Dùng placeholder ngoài 6 biến chuẩn (`{source_name}`, `{target_name}`, `{source_value}`, `{target_value}`, `{source_category}`, `{target_category}`) |
 | **`RULE_DUPLICATE_DEFINITION`** | `409` | `"Quy tắc tương thích với cùng cặp danh mục, khóa thông số và toán tử này đã tồn tại"` | Trùng bộ 5 `(source_category, target_category, source_spec_key, target_spec_key, operator)` |
 | **`RULE_DRY_RUN_EMPTY_PRODUCTS`** | `400` | `"Vui lòng chọn ít nhất một sản phẩm mẫu để chạy thử quy tắc"` | Gọi `/api/v1/admin/rules/dry-run` nhưng danh sách sản phẩm mẫu rỗng |
+| **`RULE_CHECK_TOO_MANY_PRODUCTS`** *(v1.2)* | `400` | `"Số lượng sản phẩm khác nhau trong một lần kiểm tra tương thích vượt quá giới hạn cho phép"` | Số `product_id` phân biệt sau khi gộp `> 30` (check & dry-run) |
+| **`RULE_CHECK_QUANTITY_EXCEEDED`** *(v1.2)* | `400` | `"Số lượng của một sản phẩm trong cấu hình vượt quá giới hạn cho phép"` | Tổng `quantity` cộng dồn của một sản phẩm `> 16` |
 
 ---
 
@@ -1081,10 +1170,20 @@ Phân hệ được kiểm chứng thông qua bộ Unit Test & Benchmark Test đ
 | **`TC-RE-07`** | Unit | Kiểm tra `RuleValidator` chặn toán tử sai cho khóa tổng hợp & kiểu Registry | Tạo luật với `source_spec_key = "_count"` và `operator = "IN"`; hoặc `target_spec_key = "ram_slots"` (`INTEGER`) với `operator = "IN"` | Ném `BusinessException` với mã `RULE_INCOMPATIBLE_OPERATOR`. |
 | **`TC-RE-08`** | Unit | Kiểm tra `RuleValidator` bắt lỗi cú pháp Template & Placeholder lạ | Template có `{source_value` (thiếu `}`) hoặc chứa `{unknown_var}` | Ném `BusinessException` với `RULE_INVALID_TEMPLATE_SYNTAX` và `RULE_UNKNOWN_PLACEHOLDER`. |
 | **`TC-RE-09`** | Unit | Kiểm tra `RuleValidator` chặn tạo trùng quy tắc | Tạo luật trùng bộ 5 `(CPU, MOTHERBOARD, socket_type, supported_sockets, IN)` | Ném `BusinessException` với mã `RULE_DUPLICATE_DEFINITION` (HTTP `409`). |
-| **`TC-RE-10`** | Unit | Kiểm tra `Null-Safety` khi sản phẩm thiếu thông số JSON | GPU không có trường `pcie_gen`, Mainboard có `max_pcie_gen: 4.0` | Không ném `NullPointerException`, ghi log `WARN` và trả về `isCompatible = true`. |
+| **`TC-RE-10`** | Unit | Kiểm tra `Null-Safety` khi sản phẩm thiếu thông số JSON *(cập nhật v1.2)* | GPU không có trường `pcie_gen`, Mainboard có `max_pcie_gen: 4.0`, luật `WARNING` | Không ném `NullPointerException`, `isCompatible = true`, `errors` rỗng, **1 `WARNING` "Không thể xác minh..."** tham chiếu GPU. |
 | **`TC-RE-11`** | Unit | Kiểm tra `Dry-Run Sandbox` phát hiện vi phạm & cảnh báo thiếu spec | Gọi `dryRun()` với 1 GPU dài `357.6mm` và 1 Case `max_gpu_length_mm: 320` | Trả về `DryRunResultDTO` với `isCompatible = false`, `extractedSourceValue = 357.6`, `extractedTargetValue = 320`, câu thông báo lỗi đã nội suy. |
-| **`TC-RE-12`** | Unit | Kiểm tra đồng bộ Cache khi Admin tắt/sửa/xóa quy tắc (`Cache Eviction`) | Admin gọi `updateRuleStatus(ruleId, false)` cho luật Socket Match, sau đó gọi `checkCompatibility()` | `RuleCacheManager.evictAll()` được gọi, lần đánh giá kế tiếp tự nạp lại tập luật mới và không còn bắt lỗi Socket Match. |
-| **`TC-RE-13`** | Benchmark | Kiểm thử hiệu năng đánh giá song song (`RuleEngineBenchmarkTest`) | Cấu hình đầy đủ 8 linh kiện, 50 quy tắc active trong `PreIndexedRuleCache`, chạy 1.000 lần liên tiếp sau warm-up | Thời gian trung bình mỗi lần đánh giá (P99 Latency) **$< 2.0\text{ms}$**. |
+| **`TC-RE-12`** | Unit | Kiểm tra đồng bộ Cache khi Admin tắt/sửa/xóa quy tắc (`Cache Eviction`) *(cập nhật v1.2)* | Admin gọi `createRule` / `updateRuleStatus` / `deleteRule` | `RuleCacheManager.evictAllAfterCommit()` được gọi đúng số lần (thay cho `evictAll()`). |
+| **`TC-RE-13`** | Benchmark | Kiểm thử hiệu năng đánh giá tuần tự (`RuleEngineBenchmarkTest`) | Cấu hình đầy đủ 8 linh kiện, 50 quy tắc active trong `PreIndexedRuleCache`, chạy 1.000 lần liên tiếp sau warm-up | Thời gian trung bình mỗi lần đánh giá (P99 Latency) **$< 2.0\text{ms}$**. |
+| **`TC-RE-14`** | Unit | Chặn quá nhiều sản phẩm phân biệt (v1.2) | `checkCompatibilityWithQuantities()` với 31 ID khác nhau | Ném `BusinessException(RULE_CHECK_TOO_MANY_PRODUCTS)`, **không** gọi `productRepository`. |
+| **`TC-RE-15`** | Unit | Chặn quantity vượt giới hạn / tràn số (v1.2) | 1 ID với quantity `17`; 1 ID với quantity `Integer.MAX_VALUE` | Ném `BusinessException(RULE_CHECK_QUANTITY_EXCEEDED)`. |
+| **`TC-RE-16`** | Unit | Trả `unresolved_product_ids` (v1.2) | Yêu cầu 2 ID, Repository chỉ trả 1 sản phẩm | `unresolvedProductIds` chứa đúng ID còn lại. |
+| **`TC-RE-17`** | Unit | `evictAllAfterCommit()` hoãn xóa tới khi commit (v1.2) | Kích hoạt `TransactionSynchronizationManager.initSynchronization()`, gọi `evictAllAfterCommit()` | Cache chưa bị xóa trước `afterCommit()`; bị xóa sau khi gọi `afterCommit()`. Không có transaction $\rightarrow$ xóa ngay. |
+| **`TC-RE-18`** | Unit | `_count` không tràn số (v1.2) | `ProductItemContext` `quantity = Integer.MAX_VALUE`, `modules_per_kit = 2` | `RAM:_count == Integer.MAX_VALUE` (không âm). |
+| **`TC-RE-19`** | Unit | `NaN`/`Infinity` không gây Exception (v1.2) | `tdp_w = "NaN"`, `EqualsOperatorStrategy.evaluate(Double.NaN, 1)`, `LteOperatorStrategy.evaluate(Double.POSITIVE_INFINITY, 1)` | Không ném Exception; strategy trả `false`; `_total_tdp_w` hữu hạn. |
+| **`TC-RE-20`** | Unit | `categoryCode == null` không gây NPE (v1.2) | `evaluateContexts()` với context có `categoryCode = null` | Không ném Exception, trả kết quả hợp lệ. |
+| **`TC-RE-21`** | Unit | `RANGE` với cận âm (v1.2) | `evaluate(-3, "-5-10")`, `evaluate(-7, "-10--5")`, `evaluate(11, "-5-10")` | `true`, `true`, `false`. |
+| **`TC-RE-22`** | Unit | Kẹp phân trang (v1.2) | `GET /admin/rules?size=100000&page=-1` | `Pageable` có `size = 100`, `page = 0`. |
+| **`TC-RE-23`** | Unit | `RuleValidator` đối chiếu `_sum_/_max_<field>` (v1.2) | `source_spec_key = "_sum_not_exist"` hoặc `_max_<field kiểu STRING>` | Ném `BusinessException(RULE_UNKNOWN_AGGREGATE_KEY)`. |
 
 ---
 
@@ -1097,3 +1196,19 @@ Phân hệ được kiểm chứng thông qua bộ Unit Test & Benchmark Test đ
 | **3** | Luật số 7 (`PSU Wattage Sufficiency`) trong `V2__seed_rules.sql` dùng `source_category = 'CPU'` kèm `source_spec_key = '_total_tdp_w'`, trong khi `sdd.md` dùng `_SYSTEM`. | `AggregateCalculator` và `RuleEvaluator` hỗ trợ đồng thời cả `source_category = '_SYSTEM'` lẫn `source_category = 'CPU'` khi `source_spec_key == '_total_tdp_w'`, và không cộng nhầm `tdp_w` (công suất giải nhiệt) của `CPU_COOLER` vào điện năng tiêu thụ hệ thống. |
 | **4** | `RuleValidator` ở `v1.0` chưa đối chiếu kiểu dữ liệu với `CategorySpecSchemaRegistry` (đã xây dựng ở UC5) và chưa đăng ký mã lỗi trong `ErrorCode.java`. | Tích hợp `CategorySpecSchemaRegistry` vào `RuleValidator` (Bước 1, 2, 3) và chuẩn hóa 10 mã lỗi `RULE_*` vào enum `ErrorCode`. |
 | **5** | Với các luật tổng hợp (`RAM:_count`, `RAM:_sum_capacity_gb`), nếu người dùng lắp nhiều thanh RAM thì `v1.0` lặp qua từng thanh RAM nguồn và sinh thông báo lỗi bị trùng lặp. | Chuẩn hóa `RuleEvaluator`: các quy tắc có `source_spec_key` bắt đầu bằng `_` chỉ đánh giá 1 lần trên mỗi linh kiện đích (`targetItem`). |
+
+
+---
+
+## Phụ lục B. Lịch sử Hiệu chỉnh (`v1.1` $\rightarrow$ `v1.2`)
+
+| # | Vấn đề phát hiện trong `v1.1` (Code Review 11/2026) | Hiệu chỉnh trong bản `v1.2` |
+| :---: | :--- | :--- |
+| **1** | `/api/v1/compatibility/check` không giới hạn đầu vào, luật cấp linh kiện bùng nổ $N \times M$ $\rightarrow$ nguy cơ OOM/sập JVM. | Giới hạn 30 sản phẩm phân biệt, quantity `1..16`, `@Valid` + `@Size` (Mục 4.6.A); mã lỗi `RULE_CHECK_TOO_MANY_PRODUCTS`, `RULE_CHECK_QUANTITY_EXCEEDED`. |
+| **2** | Thiếu spec / ID không tồn tại bị bỏ qua im lặng $\rightarrow$ `is_compatible = true` sai lệch. | Sinh cảnh báo `WARNING`/`INFO` "Không thể xác minh..." và trả `unresolved_product_ids` (Mục 4.3.C, 4.6.C). |
+| **3** | `evictAll()` gọi bên trong transaction trước commit $\rightarrow$ Cache có thể nạp lại luật cũ trong 1 giờ. | `evictAllAfterCommit()` qua `TransactionSynchronization.afterCommit()` (Mục 4.5.B.3). |
+| **4** | Tràn số `int` khi cộng dồn quantity và tính `_count`. | Giới hạn đầu vào + tính bằng `long` và chặn trần (Mục 4.4.B.5). |
+| **5** | `@Transactional` giữ connection Hikari trong lúc đánh giá song song; `ruleEngineExecutor` dùng chung gây tranh chấp. | Bỏ `@Transactional` ở luồng check, sao chép specs, đánh giá tuần tự, bỏ `ruleEngineExecutor` (Mục 4.5.B, 4.6.B). |
+| **6** | `NaN`/`Infinity` gây `NumberFormatException`; NPE khi `categoryCode == null`; `RANGE` sai với cận âm. | Chuyển đổi số an toàn, chuẩn hóa `UNKNOWN`, regex phân tích `min-max` (Mục 4.3.A, 4.4.B.5). |
+| **7** | `size` phân trang không giới hạn; JSON/enum lỗi trả `500`; `_sum_/_max_<field>` không đối chiếu schema. | Kẹp `size ≤ 100`, bổ sung handler `400`, đối chiếu Registry (Mục 4.6.D, 4.6.E). |
+| **8** | Admin API `/api/v1/admin/rules/**` không yêu cầu xác thực. | **Hoãn** tới khi hoàn thành `UC0 Auth & Security` (chưa có hệ thống Role). |

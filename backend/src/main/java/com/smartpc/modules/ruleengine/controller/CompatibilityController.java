@@ -5,6 +5,7 @@ import com.smartpc.modules.ruleengine.dto.CompatibilityResult;
 import com.smartpc.modules.ruleengine.dto.request.CompatibilityCheckRequest;
 import com.smartpc.modules.ruleengine.dto.request.CompatibilityItemRequest;
 import com.smartpc.modules.ruleengine.service.CompatibilityService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,7 +24,7 @@ public class CompatibilityController {
 
     @PostMapping("/check")
     public ApiResponse<CompatibilityResult> checkCompatibility(
-            @RequestBody CompatibilityCheckRequest request
+            @Valid @RequestBody CompatibilityCheckRequest request
     ) {
         if (request == null) {
             return ApiResponse.success(CompatibilityResult.builder().isCompatible(true).build());
@@ -36,7 +37,9 @@ public class CompatibilityController {
             for (String pid : request.getProductIds()) {
                 if (pid != null && !pid.isBlank()) {
                     String cleanId = pid.trim();
-                    productQuantities.put(cleanId, productQuantities.getOrDefault(cleanId, 0) + 1);
+                    long current = productQuantities.getOrDefault(cleanId, 0);
+                    long updated = Math.min((long) CompatibilityService.MAX_QUANTITY_PER_PRODUCT + 1, current + 1);
+                    productQuantities.put(cleanId, (int) updated);
                 }
             }
         }
@@ -47,7 +50,9 @@ public class CompatibilityController {
                 if (item != null && item.getProductId() != null && !item.getProductId().isBlank()) {
                     String cleanId = item.getProductId().trim();
                     int qty = item.getQuantity() != null && item.getQuantity() > 0 ? item.getQuantity() : 1;
-                    productQuantities.put(cleanId, productQuantities.getOrDefault(cleanId, 0) + qty);
+                    long current = productQuantities.getOrDefault(cleanId, 0);
+                    long updated = Math.min((long) CompatibilityService.MAX_QUANTITY_PER_PRODUCT + 1, current + qty);
+                    productQuantities.put(cleanId, (int) updated);
                 }
             }
         }

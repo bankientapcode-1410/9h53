@@ -10,8 +10,6 @@ interface QuickChipsFilterBarProps {
   maxPrice?: number;
   onToggleBrand: (brand: string) => void;
   onClearBrands?: () => void;
-  onToggleSpec: (specKey: string, value: string) => void;
-  onClearSpec?: (specKey: string) => void;
   onSetPriceRange: (min?: number, max?: number) => void;
   onResetFilters: () => void;
 }
@@ -30,8 +28,6 @@ export const QuickChipsFilterBar: React.FC<QuickChipsFilterBarProps> = ({
   maxPrice,
   onToggleBrand,
   onClearBrands,
-  onToggleSpec,
-  onClearSpec,
   onSetPriceRange,
   onResetFilters,
 }) => {
@@ -53,17 +49,6 @@ export const QuickChipsFilterBar: React.FC<QuickChipsFilterBarProps> = ({
       g.code === 'price' ||
       (g as any).group_key === 'price' ||
       (g as any).group_key === 'price_ranges'
-  );
-
-  // Other dynamic spec facets (if any)
-  const otherGroups = facets.filter(
-    (g) =>
-      g.code !== 'brand' &&
-      (g as any).group_key !== 'brand' &&
-      g.code !== 'price_ranges' &&
-      g.code !== 'price' &&
-      (g as any).group_key !== 'price' &&
-      (g as any).group_key !== 'price_ranges'
   );
 
   const priceOptions =
@@ -238,74 +223,6 @@ export const QuickChipsFilterBar: React.FC<QuickChipsFilterBarProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Additional Spec Chip Groups (if present in facets) */}
-      {otherGroups.length > 0 && (
-        <div className="bg-white rounded-xl p-3 md:p-3.5 shadow-xs border border-slate-200/80 space-y-2">
-          {otherGroups.map((group) => {
-            const currentVal = activeSpecs[group.code] || '';
-            const activeValues = currentVal ? currentVal.split(',') : [];
-
-            return (
-              <div key={group.code} className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-slate-700 w-24 flex-shrink-0">
-                  {group.label}:
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (activeValues.length > 0) {
-                        if (onClearSpec) {
-                          onClearSpec(group.code);
-                        } else {
-                          onToggleSpec(group.code, '');
-                        }
-                      }
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition border ${
-                      activeValues.length === 0
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    Tất cả
-                  </button>
-                  {group.options.map((opt) => {
-                    const isSelected = activeValues.includes(opt.value);
-                    return (
-                      <button
-                        type="button"
-                        key={opt.value}
-                        onClick={() => onToggleSpec(group.code, opt.value)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition border ${
-                          isSelected
-                            ? 'bg-smart-blue text-white border-smart-blue shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3 h-3 stroke-[2.5]" />}
-                        <span>{opt.label}</span>
-                        {opt.count > 0 && (
-                          <span
-                            className={`text-[10px] ml-0.5 px-1 py-0.2 rounded-full ${
-                              isSelected
-                                ? 'bg-blue-700 text-blue-100'
-                                : 'bg-slate-100 text-slate-500'
-                            }`}
-                          >
-                            {opt.count}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 };

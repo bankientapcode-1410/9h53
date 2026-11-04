@@ -59,7 +59,7 @@ public class ProductAdminService {
         }
 
         int pageNum = pageable != null ? pageable.getPageNumber() : 0;
-        int pageSize = pageable != null ? pageable.getSize() : 20;
+        int pageSize = pageable != null ? pageable.getPageSize() : 20;
 
         Sort sort = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("productId"));
         PageRequest pageRequest = PageRequest.of(pageNum, pageSize, sort);

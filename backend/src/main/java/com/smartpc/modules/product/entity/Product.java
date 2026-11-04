@@ -2,6 +2,8 @@ package com.smartpc.modules.product.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -97,6 +99,7 @@ public class Product {
     @Column(name = "v_memory_type", insertable = false, updatable = false)
     private String vMemoryType;
 
+    @JdbcTypeCode(SqlTypes.SMALLINT)
     @Column(name = "v_vram_gb", insertable = false, updatable = false)
     private Integer vVramGb;
 

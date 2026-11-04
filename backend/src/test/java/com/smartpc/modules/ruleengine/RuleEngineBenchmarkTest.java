@@ -117,31 +117,35 @@ class RuleEngineBenchmarkTest {
         // Build full 8-component PC
         fullPcConfiguration = List.of(
                 ProductItemContext.builder().productId("p1").productName("CPU Intel").categoryCode("CPU").quantity(1)
-                        .specs(Map.of("socket_type", "LGA1700", "tdp_w", 125, "test_key", "match")).build(),
+                        .specs(Map.of("socket_type", "LGA1700", "tdp_w", 125, "test_key", "match", "test_target_key", "match")).build(),
                 ProductItemContext.builder().productId("p2").productName("Mainboard ASUS").categoryCode("MOTHERBOARD").quantity(1)
-                        .specs(Map.of("supported_sockets", List.of("LGA1700"), "ram_slots", 4, "test_target_key", "match")).build(),
+                        .specs(Map.of("supported_sockets", List.of("LGA1700"), "ram_slots", 4, "test_key", "match", "test_target_key", "match")).build(),
                 ProductItemContext.builder().productId("p3").productName("RAM Corsair").categoryCode("RAM").quantity(2)
-                        .specs(Map.of("modules_per_kit", 2, "capacity_gb", 32, "test_key", "match")).build(),
+                        .specs(Map.of("modules_per_kit", 2, "capacity_gb", 32, "test_key", "match", "test_target_key", "match")).build(),
                 ProductItemContext.builder().productId("p4").productName("GPU RTX 4080").categoryCode("GPU").quantity(1)
-                        .specs(Map.of("length_mm", 304, "tdp_w", 320, "test_key", "match")).build(),
+                        .specs(Map.of("length_mm", 304, "tdp_w", 320, "test_key", "match", "test_target_key", "match")).build(),
                 ProductItemContext.builder().productId("p5").productName("SSD Samsung").categoryCode("SSD_M2").quantity(2)
-                        .specs(Map.of("form_factor", "2280", "capacity_gb", 1000, "test_key", "match")).build(),
+                        .specs(Map.of("form_factor", "2280", "capacity_gb", 1000, "test_key", "match", "test_target_key", "match")).build(),
                 ProductItemContext.builder().productId("p6").productName("PSU Corsair 850W").categoryCode("PSU").quantity(1)
-                        .specs(Map.of("rated_wattage_w", 850, "test_target_key", "match")).build(),
+                        .specs(Map.of("rated_wattage_w", 850, "test_key", "match", "test_target_key", "match")).build(),
                 ProductItemContext.builder().productId("p7").productName("Case NZXT").categoryCode("CASE").quantity(1)
-                        .specs(Map.of("max_gpu_length_mm", 360, "max_cooler_height_mm", 165, "test_target_key", "match")).build(),
+                        .specs(Map.of("max_gpu_length_mm", 360, "max_cooler_height_mm", 165, "test_key", "match", "test_target_key", "match")).build(),
                 ProductItemContext.builder().productId("p8").productName("Cooler Noctua").categoryCode("CPU_COOLER").quantity(1)
-                        .specs(Map.of("height_mm", 160, "tdp_w", 250, "test_target_key", "match")).build()
+                        .specs(Map.of("height_mm", 160, "tdp_w", 250, "test_key", "match", "test_target_key", "match")).build()
         );
     }
 
     @Test
     @DisplayName("TC-RE-13: Benchmark hiệu năng đánh giá cấu hình 8 linh kiện với 50 rules (P99 Latency < 2.0ms)")
     void testPerformanceP99LatencyUnder2ms() {
-        // 1. Warm-up JIT compiler (100 iterations)
-        for (int i = 0; i < 100; i++) {
+        // 1. Warm-up JIT compiler (2000 iterations to ensure full C2 optimization)
+        for (int i = 0; i < 2000; i++) {
             compatibilityService.evaluateContexts(fullPcConfiguration);
         }
+        System.gc();
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException ignored) {}
 
         // 2. Benchmark 1,000 iterations
         int iterations = 1000;

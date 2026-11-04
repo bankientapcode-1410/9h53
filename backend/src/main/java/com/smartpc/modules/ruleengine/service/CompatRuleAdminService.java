@@ -73,8 +73,8 @@ public class CompatRuleAdminService {
         CompatRule entity = ruleMapper.toEntity(request);
         CompatRule saved = ruleRepository.save(entity);
 
-        ruleCacheManager.evictAll();
-        log.info("Created new compatibility rule [{}] with ID [{}] and evicted rule cache",
+        ruleCacheManager.evictAllAfterCommit();
+        log.info("Created new compatibility rule [{}] with ID [{}] and scheduled cache eviction after commit",
                 saved.getRuleName(), saved.getRuleId());
 
         return ruleMapper.toDTO(saved);
@@ -91,8 +91,8 @@ public class CompatRuleAdminService {
         ruleMapper.updateEntity(entity, request);
         CompatRule saved = ruleRepository.save(entity);
 
-        ruleCacheManager.evictAll();
-        log.info("Updated compatibility rule [{}] with ID [{}] and evicted rule cache",
+        ruleCacheManager.evictAllAfterCommit();
+        log.info("Updated compatibility rule [{}] with ID [{}] and scheduled cache eviction after commit",
                 saved.getRuleName(), saved.getRuleId());
 
         return ruleMapper.toDTO(saved);
@@ -107,8 +107,8 @@ public class CompatRuleAdminService {
         entity.setIsActive(isActive);
         CompatRule saved = ruleRepository.save(entity);
 
-        ruleCacheManager.evictAll();
-        log.info("Updated status of rule [{}] to [{}] and evicted rule cache", ruleId, isActive);
+        ruleCacheManager.evictAllAfterCommit();
+        log.info("Updated status of rule [{}] to [{}] and scheduled cache eviction after commit", ruleId, isActive);
 
         return ruleMapper.toDTO(saved);
     }
@@ -120,8 +120,8 @@ public class CompatRuleAdminService {
                         "Không tìm thấy quy tắc tương thích với ID: " + ruleId));
 
         ruleRepository.delete(entity);
-        ruleCacheManager.evictAll();
-        log.info("Deleted compatibility rule [{}] and evicted rule cache", ruleId);
+        ruleCacheManager.evictAllAfterCommit();
+        log.info("Deleted compatibility rule [{}] and scheduled cache eviction after commit", ruleId);
     }
 
     @Transactional(readOnly = true)
@@ -156,6 +156,8 @@ public class CompatRuleAdminService {
         if (productQuantities.isEmpty()) {
             throw new BusinessException(ErrorCode.RULE_DRY_RUN_EMPTY_PRODUCTS);
         }
+
+        CompatibilityService.validateRequestBounds(productQuantities);
 
         List<Product> products = productRepository.findAllActiveWithCategoryByIds(productQuantities.keySet());
         if (products.isEmpty()) {

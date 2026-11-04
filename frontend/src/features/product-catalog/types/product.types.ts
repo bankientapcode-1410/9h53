@@ -31,9 +31,11 @@ export interface FacetOptionDTO {
 }
 
 export interface FacetFilterGroupDTO {
-  code: string;
-  label: string;
-  filter_type: 'CHIP' | 'RANGE' | 'DROPDOWN' | string;
+  code?: string;
+  label?: string;
+  group_key?: string;
+  group_label?: string;
+  filter_type?: 'CHIP' | 'RANGE' | 'DROPDOWN' | string;
   options: FacetOptionDTO[];
   min_price?: number;
   max_price?: number;

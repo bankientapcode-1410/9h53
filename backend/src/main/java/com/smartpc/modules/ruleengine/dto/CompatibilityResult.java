@@ -28,6 +28,11 @@ public class CompatibilityResult {
     @Builder.Default
     private List<ViolationDetail> info = new ArrayList<>();
 
+    /** ID được yêu cầu nhưng không tìm thấy sản phẩm active (DD-UC6 §4.6.C). */
+    @Builder.Default
+    @JsonProperty("unresolved_product_ids")
+    private List<String> unresolvedProductIds = new ArrayList<>();
+
     @Data
     @Builder
     @NoArgsConstructor

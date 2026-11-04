@@ -40,7 +40,9 @@ public class CompatRuleAdminController {
                 .keyword(keyword)
                 .build();
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "priority").and(Sort.by(Sort.Direction.ASC, "createdAt")));
+        int safePage = Math.max(0, page != null ? page : 0);
+        int safeSize = Math.min(100, Math.max(1, size != null ? size : 20));
+        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.ASC, "priority").and(Sort.by(Sort.Direction.ASC, "createdAt")));
         return ApiResponse.success(ruleAdminService.getRules(criteria, pageable));
     }
 
