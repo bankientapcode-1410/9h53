@@ -39,6 +39,7 @@ flowchart LR
 | `7.3.2.3` | 7.3.2 Tích hợp LLM | `SERVICE/RAG` | Grounding danh mục hàng có sẵn: Tích hợp ngữ cảnh sản phẩm kho SmartPC vào Prompt Backend & Frontend | `GeminiChatService.java`, `aiChatService.ts` | DD §4.1 & §4.2 | `7.3.2.1` | Chỉ tư vấn hàng trong kho, không hallucinate | `DONE` |
 | `7.3.3.1` | 7.3.1 Giao diện Chat | `FE SERVICE` | Khai báo types và Axios service client `aiChatService.ts` | `frontend/src/services/aiChatService.ts`, `types/chat.types.ts` | DD §1.2 & §5 | `7.3.2.2` | Gọi backend thành công, có fallback mock | `DONE` |
 | `7.3.4.1` | 7.3.1 Giao diện Chat | `FE UI` | Tạo Floating Widget `AIChatWidget.tsx`, hiển thị tin nhắn Markdown, Quick Chips, tích hợp vào `App.tsx` | `frontend/src/features/ai-chat/components/AIChatWidget.tsx`, `App.tsx` | DD §1.2 & §7 | `7.3.3.1` | Widget mở/đóng mượt mà, chat phản hồi tốt | `DONE` |
+| `7.3.4.2` | 7.3.1 Giao diện Chat | `FE/SERVICE` | Cập nhật Semantic Intent Search cho `AISearchPage`: Tự động trích xuất danh mục (GPU/CPU...) và sản phẩm AI đề xuất để hiển thị lưới thẻ sản phẩm | `AISearchPage.tsx`, `productService.ts` | DD §4.4 | `7.3.4.1` | Gõ "Card chiến LOL ngon" hiển thị đúng thẻ sản phẩm GPU | `DONE` |
 | `7.3.5.1` | 7.3.4 AI suy luận | `TEST` | Viết Unit Test cho `GeminiChatService` | `backend/src/test/.../ai/GeminiChatServiceTest.java` | DD §7 | `7.3.2.1` | 100% test case trong DD Mục 7 pass | `DONE` |
 
 ---

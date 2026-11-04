@@ -22,7 +22,7 @@ public class ProductSpecifications {
             if (criteria == null) {
                 predicates.add(cb.isTrue(root.get("isActive")));
                 predicates.add(cb.isNull(root.get("deletedAt")));
-                return cb.and(predicates.toArray(new Predicate[0]));
+            return cb.and(predicates.toArray(new Predicate[0]));
             }
 
             // 1. Soft delete filter
@@ -131,6 +131,59 @@ public class ProductSpecifications {
                             predicates.add(cb.or(orPredicates.toArray(new Predicate[0])));
                         }
                     }
+                }
+            }
+
+            // 8. Search keyword filter & category intent recognition
+            if (criteria.getSearch() != null && !criteria.getSearch().isBlank()) {
+                String rawSearch = criteria.getSearch().trim().toLowerCase();
+
+                // Tu dong nhan dien danh muc neu chua chon category cu the
+                if (criteria.getCategory() == null || criteria.getCategory().isBlank()) {
+                    String detectedCat = null;
+                    if (rawSearch.matches(".*\\b(cpu|chip|vi xử lý|bộ vi xử lý)\\b.*")) {
+                        detectedCat = "CPU";
+                    } else if (rawSearch.matches(".*\\b(vga|gpu|card màn hình|card đồ họa|card)\\b.*") || rawSearch.contains("chiến lol")) {
+                        detectedCat = "GPU";
+                    } else if (rawSearch.matches(".*\\b(ram|bộ nhớ trong|thanh ram)\\b.*")) {
+                        detectedCat = "RAM";
+                    } else if (rawSearch.matches(".*\\b(main|mainboard|bo mạch chủ|bo mạch)\\b.*")) {
+                        detectedCat = "MOTHERBOARD";
+                    } else if (rawSearch.matches(".*\\b(ssd|ổ cứng|nvme)\\b.*")) {
+                        detectedCat = "SSD_M2";
+                    } else if (rawSearch.matches(".*\\b(nguồn|psu|bộ nguồn)\\b.*")) {
+                        detectedCat = "PSU";
+                    } else if (rawSearch.matches(".*\\b(case|vỏ case|vỏ máy tính|thùng máy)\\b.*")) {
+                        detectedCat = "CASE";
+                    } else if (rawSearch.matches(".*\\b(tản|tản nhiệt|cooler)\\b.*")) {
+                        detectedCat = "CPU_COOLER";
+                    }
+
+                    if (detectedCat != null) {
+                        predicates.add(cb.equal(
+                                cb.upper(root.get("category").get("categoryCode")),
+                                detectedCat
+                        ));
+                    }
+                }
+
+                List<String> stopWords = List.of(
+                        "máy", "tính", "cho", "của", "các", "những", "cần", "mua", "tìm", "kiếm",
+                        "loại", "nào", "được", "với", "trong", "chip", "card", "văn", "phòng"
+                );
+                List<String> keywords = Arrays.stream(rawSearch.split("\\s+"))
+                        .map(s -> s.replaceAll("[^a-zA-Z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", ""))
+                        .filter(s -> s.length() > 1 && !stopWords.contains(s))
+                        .toList();
+
+                if (!keywords.isEmpty()) {
+                    List<Predicate> kwPredicates = new ArrayList<>();
+                    for (String kw : keywords) {
+                        String pattern = "%" + kw + "%";
+                        kwPredicates.add(cb.like(cb.lower(root.get("name")), pattern));
+                        kwPredicates.add(cb.like(cb.lower(root.get("brand")), pattern));
+                    }
+                    predicates.add(cb.or(kwPredicates.toArray(new Predicate[0])));
                 }
             }
 

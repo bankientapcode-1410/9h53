@@ -21,5 +21,6 @@ export interface ChatResponse {
   reply: string;
   suggestions?: string[];
   is_fallback?: boolean;
+  fallback?: boolean;
 }
 
