@@ -116,6 +116,21 @@ public class SpecSchemaValidator {
         switch (def.getType()) {
             case STRING -> {
                 String strVal = String.valueOf(value).trim();
+                if ("layout".equalsIgnoreCase(key) && strVal.toLowerCase().startsWith("compact ")) {
+                    strVal = strVal.replaceFirst("(?i)^compact\\s+", "").trim();
+                }
+                if ("led_type".equalsIgnoreCase(key)) {
+                    String lower = strVal.toLowerCase();
+                    if (lower.equals("rgb") || lower.equals("argb")) {
+                        strVal = "RGB";
+                    } else if (lower.contains("monochrome") || lower.contains("đơn sắc") || lower.contains("don sac") || lower.contains("white")) {
+                        strVal = "Monochrome";
+                    } else if (lower.contains("rainbow")) {
+                        strVal = "Rainbow";
+                    } else if (lower.equals("none") || lower.contains("không") || lower.contains("khong") || lower.contains("no led")) {
+                        strVal = "None";
+                    }
+                }
                 if (def.getAllowedValues() != null && !def.getAllowedValues().isEmpty()) {
                     String canonicalVal = null;
                     for (String allowed : def.getAllowedValues()) {

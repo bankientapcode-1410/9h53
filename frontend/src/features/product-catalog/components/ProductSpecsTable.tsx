@@ -33,6 +33,15 @@ export const ProductSpecsTable: React.FC<ProductSpecsTableProps> = ({
     if (key.endsWith('_w')) return 'W';
     if (key.endsWith('_mm')) return 'mm';
     if (key.endsWith('_mbps')) return 'MB/s';
+    if (key.endsWith('_hz')) return 'Hz';
+    if (key.endsWith('_inch')) return 'inch';
+    if (key.endsWith('_ms')) return 'ms';
+    if (key.endsWith('_g')) return 'g';
+    if (key === 'screen_size_inch') return 'inch';
+    if (key === 'refresh_rate_hz') return 'Hz';
+    if (key === 'response_time_ms') return 'ms';
+    if (key === 'dpi') return 'DPI';
+    if (key === 'weight_g') return 'g';
     if (key === 'core_count') return 'nhân';
     if (key === 'thread_count') return 'luồng';
     if (key === 'ram_slots' || key === 'm2_slots') return 'khe';
@@ -47,6 +56,20 @@ export const ProductSpecsTable: React.FC<ProductSpecsTableProps> = ({
         unit: specLabels[key].unit ?? inferUnit(key),
       };
     }
+    // Explicit Vietnamese label fallbacks for peripherals if specLabels not provided
+    if (key === 'screen_size_inch') return { label: 'Kích thước màn hình', unit: 'inch' };
+    if (key === 'refresh_rate_hz') return { label: 'Tần số quét', unit: 'Hz' };
+    if (key === 'panel_type') return { label: 'Tấm nền' };
+    if (key === 'resolution') return { label: 'Độ phân giải' };
+    if (key === 'response_time_ms') return { label: 'Thời gian phản hồi', unit: 'ms' };
+    if (key === 'connection_type') return { label: 'Chuẩn kết nối' };
+    if (key === 'switch_type') return { label: 'Loại Switch' };
+    if (key === 'layout') return { label: 'Layout phím' };
+    if (key === 'led_type') return { label: 'Đèn LED' };
+    if (key === 'dpi') return { label: 'Độ nhạy (DPI)', unit: 'DPI' };
+    if (key === 'sensor') return { label: 'Cảm biến' };
+    if (key === 'weight_g') return { label: 'Trọng lượng', unit: 'g' };
+
     // Snake case to readable
     const formatted = key
       .split('_')
@@ -55,7 +78,7 @@ export const ProductSpecsTable: React.FC<ProductSpecsTableProps> = ({
     return { label: formatted, unit: inferUnit(key) };
   };
 
-  const renderValue = (value: any, unit?: string | null) => {
+  const renderValue = (value: any, unit?: string | null, key?: string) => {
     if (value === null || value === undefined) {
       return <span className="text-slate-400 italic">Chưa xác định</span>;
     }
@@ -87,9 +110,46 @@ export const ProductSpecsTable: React.FC<ProductSpecsTableProps> = ({
       );
     }
 
+    let displayValue: string | number = typeof value === 'number' ? Number(value) : String(value);
+    if (key === 'layout') {
+      displayValue = String(displayValue).replace(/^compact\s+/i, '');
+    }
+
+    if (key === 'led_type') {
+      const v = String(value).toUpperCase();
+      if (v === 'RGB') {
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-indigo-500/10 text-purple-700 border border-purple-200">
+            LED RGB (16.8 triệu màu)
+          </span>
+        );
+      }
+      if (v === 'MONOCHROME') {
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-smart-blue border border-blue-200">
+            LED Đơn sắc (White Backlight)
+          </span>
+        );
+      }
+      if (v === 'RAINBOW') {
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+            LED Rainbow (Đa sắc phân vùng)
+          </span>
+        );
+      }
+      if (v === 'NONE') {
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+            Không LED (Thuần phím)
+          </span>
+        );
+      }
+    }
+
     return (
       <span className="font-semibold text-slate-800 text-xs md:text-sm">
-        {String(value)} {unit ? <span className="text-slate-500 font-normal">{unit}</span> : ''}
+        {displayValue} {unit ? <span className="text-slate-500 font-normal">{unit}</span> : ''}
       </span>
     );
   };
@@ -125,7 +185,7 @@ export const ProductSpecsTable: React.FC<ProductSpecsTableProps> = ({
                     {meta.label}
                   </td>
                   <td className="py-3 px-5 align-top">
-                    {renderValue(value, meta.unit)}
+                    {renderValue(value, meta.unit, key)}
                   </td>
                 </tr>
               );

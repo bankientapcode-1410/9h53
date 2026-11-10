@@ -30,11 +30,9 @@ public class ProductSpecifications {
                 predicates.add(cb.isNull(root.get("deletedAt")));
             }
 
-            // 2. Active status filter
+            // 2. Active status filter (Chỉ lọc khi có chỉ định rõ ràng; Storefront luôn truyền isActive=true)
             if (criteria.getIsActive() != null) {
                 predicates.add(cb.equal(root.get("isActive"), criteria.getIsActive()));
-            } else if (criteria.getIncludeDeleted() == null || !criteria.getIncludeDeleted()) {
-                predicates.add(cb.isTrue(root.get("isActive")));
             }
 
             // 3. Category code filter
@@ -119,14 +117,17 @@ public class ProductSpecifications {
                             // General filterable spec key via JSON_UNQUOTE(JSON_EXTRACT(specs, '$.key'))
                             List<Predicate> orPredicates = new ArrayList<>();
                             for (String v : values) {
-                                orPredicates.add(cb.equal(
-                                        cb.function(
-                                                "JSON_UNQUOTE",
-                                                String.class,
-                                                cb.function("JSON_EXTRACT", String.class, root.get("specs"), cb.literal("$." + key))
-                                        ),
-                                        v
-                                ));
+                                var jsonExpr = cb.function(
+                                        "JSON_UNQUOTE",
+                                        String.class,
+                                        cb.function("JSON_EXTRACT", String.class, root.get("specs"), cb.literal("$." + key))
+                                );
+                                orPredicates.add(cb.equal(jsonExpr, v));
+                                if (v.matches("^\\d+$")) {
+                                    orPredicates.add(cb.equal(jsonExpr, v + ".0"));
+                                } else if (v.matches("^\\d+\\.\\d+$")) {
+                                    orPredicates.add(cb.equal(jsonExpr, v.replaceAll("\\.0+$", "")));
+                                }
                             }
                             predicates.add(cb.or(orPredicates.toArray(new Predicate[0])));
                         }
@@ -157,6 +158,12 @@ public class ProductSpecifications {
                         detectedCat = "CASE";
                     } else if (rawSearch.matches(".*\\b(tản|tản nhiệt|cooler)\\b.*")) {
                         detectedCat = "CPU_COOLER";
+                    } else if (rawSearch.matches(".*\\b(màn|màn hình|monitor)\\b.*")) {
+                        detectedCat = "MONITOR";
+                    } else if (rawSearch.matches(".*\\b(chuột|mouse)\\b.*")) {
+                        detectedCat = "MOUSE";
+                    } else if (rawSearch.matches(".*\\b(phím|bàn phím|keyboard)\\b.*")) {
+                        detectedCat = "KEYBOARD";
                     }
 
                     if (detectedCat != null) {

@@ -61,7 +61,11 @@ public class ProductAdminService {
         int pageNum = pageable != null ? pageable.getPageNumber() : 0;
         int pageSize = pageable != null ? pageable.getPageSize() : 20;
 
-        Sort sort = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("productId"));
+        Sort sort = Sort.by(
+                Sort.Order.desc("isActive"),
+                Sort.Order.desc("createdAt"),
+                Sort.Order.asc("productId")
+        );
         PageRequest pageRequest = PageRequest.of(pageNum, pageSize, sort);
 
         Page<Product> page = productRepository.findAll(ProductSpecifications.of(criteria), pageRequest);

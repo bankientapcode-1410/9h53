@@ -14,6 +14,7 @@ import com.smartpc.modules.ruleengine.model.ProductItemContext;
 import com.smartpc.modules.ruleengine.model.RuleSeverity;
 import com.smartpc.modules.ruleengine.validator.RuleValidator;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -32,6 +33,7 @@ public class CompatibilityService {
     private final AggregateCalculator aggregateCalculator;
     private final RuleEvaluator ruleEvaluator;
 
+    @Autowired
     public CompatibilityService(
             ProductRepository productRepository,
             RuleCacheManager ruleCacheManager,

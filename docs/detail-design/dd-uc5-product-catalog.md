@@ -2,7 +2,7 @@
 ## Phân hệ: Quản lý Sản phẩm & Danh mục (UC1a, UC5 & WBS 7.2)
 
 * **Mã tài liệu:** `DD-UC5-PRODUCT-CATALOG`
-* **Phiên bản:** `v1.1` (Bản rà soát & hiệu chỉnh — xem [Phụ lục A](#phụ-lục-a-lịch-sử-hiệu-chỉnh-v10--v11))
+* **Phiên bản:** `v1.6` (Bổ sung đa dạng loại Đèn LED Bàn phím cơ & Mở rộng bộ lọc `led_type`: RGB, Monochrome, Rainbow, None)
 * **Phân hệ (Package):** `com.smartpc.modules.product` (Backend) & `src/features/product-catalog`, `src/features/admin/products`, `src/features/admin/categories` (Frontend)
 * **Liên kết Use-Case:** 
   * `UC1a` (Duyệt sản phẩm theo danh mục & Quick Chips Filter)
@@ -731,6 +731,47 @@ Mọi `spec_key` mà luật UC6 trong `V2__seed_rules.sql` tham chiếu đều *
 | | `cooler_type` | `STRING` | **Có** | ✔ | `AIR`, `AIO_240`, `AIO_280`, `AIO_360` | Phân loại |
 | | `height_mm` | `NUMBER` | Không | | mm (tản khí) | Dự phòng luật chiều cao tản nhiệt |
 | | `tdp_w` | `NUMBER` | Không | | Watt | `_total_tdp_w` |
+| **`MONITOR`** | `screen_size_inch` | `NUMBER` | **Có** | ✔ | inch, $> 0$ | Kích thước màn hình |
+| | `resolution` | `STRING` | **Có** | ✔ | `FHD (1920x1080)`, `2K QHD (2560x1440)`, `4K UHD (3840x2160)` | Độ phân giải |
+| | `refresh_rate_hz` | `INTEGER` | **Có** | ✔ | Hz, $> 0$ | Tần số quét hiển thị |
+| | `panel_type` | `STRING` | **Có** | ✔ | `IPS`, `VA`, `OLED`, `TN` | Loại tấm nền |
+| | `response_time_ms` | `NUMBER` | Không | | ms, $> 0$ | Thời gian phản hồi |
+| **`KEYBOARD`** | `connection_type` | `STRING` | **Có** | ✔ | `Wired`, `Wireless`, `Bluetooth / Wireless / Type-C` | Chuẩn kết nối phím |
+| | `switch_type` | `STRING` | **Có** | ✔ | `Mechanical Red`, `Mechanical Blue`, `Mechanical Brown`, `Optical Switch` | Loại Switch cơ học / quang học |
+| | `layout` | `STRING` | **Có** | ✔ | `Fullsize 104`, `Tenkeyless (TKL)`, `75%`, `68%` | Bố cục layout bàn phím |
+| | `led_type` | `STRING` | Không | ✔ | `RGB`, `Monochrome`, `Rainbow`, `None` | **Đèn LED bàn phím cơ (Chi tiết phân loại bên dưới)** |
+| **`MOUSE`** | `connection_type` | `STRING` | **Có** | ✔ | `Wired`, `Wireless`, `Bluetooth / Wireless` | Chuẩn kết nối chuột |
+| | `dpi` | `INTEGER` | **Có** | ✔ | DPI, $> 0$ | Độ nhạy cảm biến |
+| | `sensor` | `STRING` | Không | | Mã cảm biến quang học | Hiển thị |
+| | `weight_g` | `NUMBER` | Không | | gram, $> 0$ | Trọng lượng chuột |
+
+##### Bổ sung chuyên sâu: Phân loại Đèn LED trên Bàn phím cơ (`led_type`) & Mở rộng Bộ lọc
+Trong hệ sinh thái bàn phím cơ thực tế, ngoài hệ thống đèn LED RGB đa sắc, tồn tại 4 nhóm công nghệ đèn LED phục vụ các nhu cầu và phân khúc người dùng chuyên biệt:
+
+1. **`RGB` (LED RGB 16.8 triệu màu):**
+   * **Cơ chế:** Mỗi phím hoặc chân switch tích hợp diode Red-Green-Blue độc lập hoặc bóng SMD LED trên mạch PCB.
+   * **Tính năng:** Tùy biến 16.8 triệu màu, hỗ trợ animation phức tạp (Wave, Reactive, Ripple, Breathing), lập trình macro và đồng bộ phần mềm (iCUE, Razer Synapse, QMK/VIA).
+   * **Phân khúc:** Gaming cao cấp, setup rực rỡ (VD: Corsair K70 RGB PRO, Keychron K2 Pro RGB, Razer Huntsman V2).
+2. **`Monochrome` (LED Đơn sắc / Single-Color Backlight):**
+   * **Cơ chế:** Phát ra ánh sáng một màu duy nhất xuyên qua switch / keycap. Phổ biến và sang trọng nhất là **LED Trắng (White LED)**, kế đến là LED Đỏ (Red) hoặc Xanh dương (Blue).
+   * **Ưu điểm:** Ánh sáng dịu mắt, hỗ trợ làm việc/gõ văn bản ban đêm rõ ràng không gây chói hoặc phân tâm; tiết kiệm năng lượng hơn RGB, giá thành thấp hơn bản RGB từ 200.000đ - 500.000đ.
+   * **Phân khúc:** Văn phòng, lập trình viên, phong cách Minimalist (VD: Keychron K2 V2 White Backlight, Logitech G413 SE White LED).
+3. **`Rainbow` (LED Đa sắc Phân vùng / Fixed Multi-color):**
+   * **Cơ chế:** Mỗi hàng phím hoặc từng cụm phím mang bóng LED màu cố định (VD: Hàng 1 Đỏ, Hàng 2 Xanh, Hàng 3 Vàng...).
+   * **Ưu điểm:** Vẫn tạo hiệu ứng màu sắc rực rỡ và các chế độ chớp tắt/lượn sóng chuyển động nhưng chi phí sản xuất IC điều khiển cực kỳ thấp (không đổi màu từng bóng được).
+   * **Phân khúc:** Gaming phổ thông, học sinh/sinh viên, phòng net (VD: E-Dra EK387 Rainbow, DareU EK87 Multi-LED Rainbow).
+4. **`None` (Không LED / No Backlight):**
+   * **Cơ chế:** Mạch PCB không gắn bóng LED, keycap PBT dầy dặn không xuyên led (Thick PBT Dyesub / Double-shot).
+   * **Ưu điểm:** Dồn 100% ngân sách và chất lượng vào cảm giác gõ (Keycap đầm tay, switch Cherry MX / Gateron bôi trơn cao cấp, foam tiêu âm dầy dặn); pin Bluetooth/Wireless siêu bền (dùng liên tục 3-6 tháng không cần sạc so với 20-40 giờ của phím RGB).
+   * **Phân khúc:** Dân chơi phím cơ thuần túy (Enthusiast), lập trình viên làm việc chuyên sâu (VD: Leopold FC750R PD, Leopold FC900RBT Bluetooth, Filco Majestouch 2).
+
+##### Danh sách Sản phẩm Mẫu Bổ sung cho Kho Bàn phím cơ (`V11__expand_keyboard_led_types_and_products.sql`):
+* `e0000001-0000-0000-0000-000000000080`: Bàn phím cơ không dây Keychron K2 V2 Hot-swap Gateron G Pro Brown Switch (White LED) - `Monochrome`, `1.890.000đ`
+* `e0000001-0000-0000-0000-000000000081`: Bàn phím cơ có dây Logitech G413 SE Mechanical Gaming Keyboard White LED - `Monochrome`, `1.590.000đ`
+* `e0000001-0000-0000-0000-000000000082`: Bàn phím cơ có dây E-Dra EK387 Rainbow Huano Red Switch (Tenkeyless) - `Rainbow`, `650.000đ`
+* `e0000001-0000-0000-0000-000000000083`: Bàn phím cơ có dây DareU EK87 Multi-LED Rainbow Brown Switch - `Rainbow`, `590.000đ`
+* `e0000001-0000-0000-0000-000000000084`: Bàn phím cơ cao cấp Leopold FC750R PD White Grey Cherry MX Blue - `None`, `3.250.000đ`
+* `e0000001-0000-0000-0000-000000000085`: Bàn phím cơ không dây Leopold FC900RBT Charcoal Blue Bluetooth Cherry MX Brown - `None`, `3.890.000đ`
 
 > [!NOTE]
 > `max_ram_gb` và `m2_slots` được nâng lên **bắt buộc** vì luật UC6 `Max RAM Capacity` (ERROR) và `M.2 Slot Count` dựa trên chúng; nếu thiếu, Rule Engine sẽ bỏ qua luật (null-safe) và cho qua cấu hình sai.
@@ -913,6 +954,14 @@ Bám sát mockup `docs/screens/screen1.png` và `docs/screens/screen3.png`:
 2. **Admin Product List (`AdminProductListPage.tsx`):**
    * Cột trạng thái: Badge `SYNCED` / `PENDING` / `FAILED` + nút `🔄 Đồng bộ lại` (Mục 3.3).
    * Chọn nhiều dòng $\rightarrow$ **Batch Re-sync** `POST /api/v1/admin/products/batch-sync-vectors` với tối đa **100** `product_ids` (vượt $\rightarrow$ `PROD_BATCH_TOO_LARGE`).
+   * **Thanh Phân trang Nâng cao (Enhanced Pagination Controls):**
+     - Nút `Trang đầu` (icon `ChevronsLeft`, tooltip `"Trang đầu"`): Chuyển về trang `0`, disable khi `page === 0`.
+     - Nút `Trang trước` (icon `ChevronLeft`, tooltip `"Trang trước"`): Lùi 1 trang, disable khi `page === 0`.
+     - Nút `Trang sau` (icon `ChevronRight`, tooltip `"Trang sau"`): Tiến 1 trang, disable khi `page >= totalPages - 1`.
+     - Nút `Trang cuối` (icon `ChevronsRight`, tooltip `"Trang cuối"`): Chuyển đến trang `totalPages - 1`, disable khi `page >= totalPages - 1`.
+     - Ô nhập số trang trực tiếp (Jump-to-Page Input): Input số nhỏ gọn hiển thị `page + 1` trên tổng `totalPages` (VD: `Trang [ 1 ] / 8`). Cho phép gõ số trang muốn đến và bấm phím `Enter`:
+       - Ràng buộc: $p < 1 \rightarrow$ đưa về $1$; $p > \text{totalPages} \rightarrow$ đưa về $\text{totalPages}$; rỗng/không hợp lệ $\rightarrow$ hoàn tác về `page + 1`.
+       - Khi giá trị hợp lệ $p \in [1, \text{totalPages}]$, kích hoạt `setPage(p - 1)` và tự động đồng bộ lại input.
 3. **Xử lý batch phía server:** chạy nền, chia lô 10 SP, giữa các lô nghỉ 1 giây (rate limit thân thiện với quota Gemini). Nếu nhận lỗi `429` thì dừng toàn bộ lô còn lại và đặt các SP chưa xử lý về `FAILED` (tránh spam API khi đã hết quota).
 4. ID không tồn tại / đã xóa / đang `PENDING` mới (dưới 2 phút) được trả trong `rejected[]` của `BatchSyncAcceptedDTO`, không làm hỏng cả request.
 
@@ -1345,6 +1394,10 @@ Thư mục test: `backend/src/test/java/com/smartpc/modules/product/`. Integrati
 | **`TC-PROD-21`** | Integration | Soft delete | `DELETE /admin/products/{id}` với SP đã có trong `order_details` | `204`; `deleted_at` có giá trị; embedding & `cart_items` bị xóa; `GET /products/{id}` $\rightarrow$ `404` |
 | **`TC-PROD-22`** | Integration | Cache danh sách bị vô hiệu khi sửa SP | Gọi `GET /products?category=GPU` (cache), sửa giá 1 SP, gọi lại | Lần 2 trả giá mới (namespace `prodlist:ns` đã tăng) |
 | **`TC-PROD-23`** | Frontend / Unit | Bộ lọc Quick Chips 2 box, nút `Tất cả` & Rút gọn Query API | Render `QuickChipsFilterBar` với facets Brand & Price; chọn đồng thời 2 brands ASUS, MSI rồi bấm `Tất cả`; chọn dải giá "Dưới 5 triệu" / "Trên 15 triệu" | Hiển thị 2 box riêng biệt cùng 1 hàng; khi bấm `Tất cả` xóa sạch toàn bộ brand đã chọn (`activeBrands = []`) và tô màu nút `Tất cả`; URL & API rút gọn không chứa tham số mặc định (`page=0`, `size=12`, `sort=newest`, `min_price=0`, `max_price=999999999`) |
+| **`TC-PROD-25`** | Unit | Xác thực specs thiết bị ngoại vi & chuẩn hóa Layout | Kiểm tra schema `MONITOR`, `KEYBOARD`, `MOUSE`; `layout` tự chuẩn hóa từ `Compact 75%` về `75%` | Hợp lệ; ngoại lệ khi thiếu trường bắt buộc |
+| **`TC-PROD-26`** | Unit | Schema & Xác thực 4 loại Đèn LED Bàn phím cơ (`led_type`) | Đăng ký `RGB`, `Monochrome`, `Rainbow`, `None` trong `CategorySpecSchemaRegistry`; kiểm tra validate với từng loại LED | Vượt qua xác thực; giá trị không hợp lệ (VD: `Discolight`) ném `PROD_INVALID_SPECS` |
+| **`TC-PROD-27`** | Integration | Facets Đèn LED trả về đầy đủ 4 nhóm lựa chọn cho KEYBOARD | Gọi `GET /api/v1/products/facets?category=KEYBOARD` | Facet group `led_type` trả về đủ 4 options (`RGB`, `Monochrome`, `Rainbow`, `None`) với count tương ứng |
+| **`TC-PROD-24`** | Frontend / Unit | Thanh phân trang nâng cao (Trang đầu/cuối & Điền trang trực tiếp) | Test điều hướng `AdminProductListPage`: bấm `Trang đầu`, `Trang cuối`; nhập trang hợp lệ `p`, nhập trang âm $< 1$, nhập trang vượt quá `totalPages` | Nút `Trang đầu`/`Trang trước` disabled tại trang 1; `Trang cuối`/`Trang sau` disabled tại trang cuối; nhập số hợp lệ chuyển đến đúng trang; nhập ngoài biên được chặn và đưa về cận $1$ hoặc $totalPages$ an toàn |
 
 ---
 
@@ -1366,4 +1419,5 @@ Thư mục test: `backend/src/test/java/com/smartpc/modules/product/`. Integrati
 | 12 | DDL `CREATE TABLE` trùng bảng V1 & khác kiểu khóa (`CHAR` vs `VARCHAR`) | Chuyển thành migration `V3__product_catalog.sql` dạng `ALTER` |
 | 13 | Chỉ mục thiếu `is_active`/`deleted_at`, thiếu index cho `v_memory_type`, index `v_tdp_w` & `benchmark_score` đơn lẻ không dùng được cho truy vấn theo danh mục | Bộ composite index mới + Multi-Valued Index cho `supported_sockets` |
 | 14 | DTO công khai/admin dùng chung (lộ hoặc thiếu `sync_status`); `is_in_stock` trong test nhưng không có trong DTO | Tách `AdminProductDTO`; thêm `in_stock` |
-| 15 | Test đo thời gian SQL tuyệt đối ($< 15\text{ms}$) dễ flaky; TC-CAT-01 sai số lượng danh mục; package test sai | Kiểm tra bằng `EXPLAIN`; sửa dữ liệu & đường dẫn `com/smartpc/modules/product` |
+| 15 | Test đo thời gian SQL tuyệt đối ($< 15\text{ms}$) dễ flaky; TC-CAT-01 sai số lượng danh mục; package test sai | Kiểm tra bằng EXPLAIN; sửa dữ liệu & đường dẫn com/smartpc/modules/product |
+| 16 | Bộ lọc Đèn LED (led_type) của Bàn phím cơ chỉ có 1 lựa chọn RGB (8) do thiếu sản phẩm mẫu và chưa hỗ trợ loại Rainbow | Bổ sung Rainbow vào llowedValues của KEYBOARD.led_type (RGB, Monochrome, Rainbow, None); seed 6 sản phẩm phím cơ thực tế (Keychron, Logitech, E-Dra, DareU, Leopold) qua V11; cập nhật UI DynamicSpecsFilterPanel và ProductSpecsTable hiển thị nhãn thân thiện | ($< 15\text{ms}$) dễ flaky; TC-CAT-01 sai số lượng danh mục; package test sai | Kiểm tra bằng `EXPLAIN`; sửa dữ liệu & đường dẫn `com/smartpc/modules/product` |

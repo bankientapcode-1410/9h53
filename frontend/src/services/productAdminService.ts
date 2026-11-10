@@ -58,6 +58,14 @@ export const productAdminService = {
         items = items.filter((p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q));
       }
 
+      // Sắp xếp: Đang kinh doanh (is_active = true) trước, ngưng kinh doanh (is_active = false) ở cuối bảng
+      items.sort((a, b) => {
+        if (a.is_active !== b.is_active) {
+          return a.is_active ? -1 : 1;
+        }
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      });
+
       const page = criteria.page || 0;
       const size = criteria.size || 10;
       const totalElements = items.length;

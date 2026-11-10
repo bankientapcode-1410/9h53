@@ -7,6 +7,9 @@ import {
   Zap,
   Box,
   Fan,
+  Monitor,
+  Keyboard,
+  Mouse,
   ChevronRight,
   Sparkles,
   LayoutGrid,
@@ -38,6 +41,12 @@ const getCategoryIcon = (code: string) => {
       return <Box className="w-4 h-4" />;
     case 'CPU_COOLER':
       return <Fan className="w-4 h-4" />;
+    case 'MONITOR':
+      return <Monitor className="w-4 h-4" />;
+    case 'KEYBOARD':
+      return <Keyboard className="w-4 h-4" />;
+    case 'MOUSE':
+      return <Mouse className="w-4 h-4" />;
     default:
       return <Sparkles className="w-4 h-4" />;
   }

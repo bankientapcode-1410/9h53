@@ -27,6 +27,7 @@ public class ProductAdminController {
 
     @GetMapping
     public ApiResponse<PageResponse<AdminProductDTO>> getAdminProducts(
+            @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "brand", required = false) List<String> brand,
             @RequestParam(value = "min_price", required = false) Integer minPrice,
@@ -52,6 +53,7 @@ public class ProductAdminController {
         }
 
         ProductFilterCriteria criteria = ProductFilterCriteria.builder()
+                .search(search)
                 .category(category)
                 .brand(normalizedBrands)
                 .minPrice(minPrice)

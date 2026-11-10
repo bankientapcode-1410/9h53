@@ -390,8 +390,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700">URL Ảnh đại diện</label>
               <input
-                type="url"
-                placeholder="https://cdn.smartpc.vn/products/..."
+                type="text"
+                placeholder="/images/products/... hoặc https://..."
                 value={formData.image_url}
                 onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                 className="w-full text-xs px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-smart-blue"

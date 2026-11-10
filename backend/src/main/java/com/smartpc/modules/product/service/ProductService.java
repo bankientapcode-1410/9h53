@@ -45,6 +45,12 @@ public class ProductService {
         if (criteria == null) {
             criteria = new ProductFilterCriteria();
         }
+        if (criteria.getIsActive() == null) {
+            criteria.setIsActive(true);
+        }
+        if (criteria.getIncludeDeleted() == null) {
+            criteria.setIncludeDeleted(false);
+        }
 
         // Apply pageable overrides if criteria fields are not explicitly set
         if (pageable != null) {

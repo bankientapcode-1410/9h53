@@ -45,6 +45,9 @@ const POPULAR_CATEGORIES = [
   { label: 'Nguồn PSU', code: 'PSU' },
   { label: 'Vỏ Case', code: 'CASE' },
   { label: 'Tản nhiệt & Phụ kiện', code: 'CPU_COOLER' },
+  { label: 'Màn hình', code: 'MONITOR' },
+  { label: 'Bàn phím', code: 'KEYBOARD' },
+  { label: 'Chuột', code: 'MOUSE' },
 ];
 
 function Header() {

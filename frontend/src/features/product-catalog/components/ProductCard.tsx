@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Wrench, Flame, CheckCircle, AlertTriangle } from 'lucide-react';
 import { ProductSummaryDTO } from '../types/product.types';
+import { getProductImageFallback } from '@/utils/productImageFallback';
 
 interface ProductCardProps {
   product: ProductSummaryDTO;
@@ -120,13 +121,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         if (str.startsWith('AIO_')) return `AIO ${str.replace('AIO_', '')}mm`;
         return str;
       }
+      case 'screen_size_inch':
+        return `${Number(value)} inch`;
+      case 'refresh_rate_hz':
+        return `${value}Hz`;
+      case 'response_time_ms':
+        return `${value}ms`;
+      case 'dpi':
+        return `${value} DPI`;
+      case 'weight_g':
+        return `${value}g`;
+      case 'layout': {
+        const str = String(value);
+        return str.replace(/^compact\s+/i, '');
+      }
       default: {
         // Fallback suffix-based unit detection so numbers never render without a unit
+        if (key.endsWith('_inch')) return `${Number(value)} inch`;
+        if (key.endsWith('_hz')) return `${value}Hz`;
+        if (key.endsWith('_ms')) return `${value}ms`;
         if (key.endsWith('_gb')) return `${value}GB`;
         if (key.endsWith('_mhz')) return `${value}MHz`;
         if (key.endsWith('_w')) return `${value}W`;
         if (key.endsWith('_mm')) return `${value}mm`;
         if (key.endsWith('_mbps')) return `${value} MB/s`;
+        if (key.endsWith('_g')) return `${value}g`;
         if (typeof value === 'number') {
           const readableKey = key.replace(/_/g, ' ');
           return `${readableKey}: ${value}`;
@@ -174,13 +193,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <div className="relative aspect-square w-full bg-slate-50 p-4 flex items-center justify-center overflow-hidden border-b border-slate-100">
         <Link to={`/products/${product.product_id}`} className="w-full h-full flex items-center justify-center">
           <img
-            src={product.image_url || 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80'}
+            src={product.image_url || getProductImageFallback(product.category_code)}
             alt={product.name}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
             onError={(e) => {
-              (e.target as HTMLImageElement).src =
-                'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
+              (e.target as HTMLImageElement).src = getProductImageFallback(product.category_code);
             }}
           />
         </Link>

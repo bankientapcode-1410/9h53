@@ -87,7 +87,7 @@ export const aiChatService = {
       return directResult;
     }
 
-    // 3. Fallback dự phòng thông minh dựa trên 36 sản phẩm thực tế
+    // 3. Fallback dự phòng thông minh dựa trên 85 sản phẩm thực tế trong kho (bao gồm linh kiện cốt lõi & ngoại vi)
     return generateLocalFallback(request.message);
   },
 };
@@ -262,7 +262,7 @@ function generateDynamicSuggestions(userMessage: string): string[] {
 }
 
 /**
- * Bộ sinh phản hồi nội bộ thông minh dựa trên 36 linh kiện có sẵn trong kho SmartPC
+ * Bộ sinh phản hồi nội bộ thông minh dựa trên toàn bộ 85 linh kiện & thiết bị có sẵn trong kho SmartPC
  * Đảm bảo mọi câu hỏi đều nhận được câu trả lời cụ thể, chi tiết, không bao giờ lặp lại tin nhắn chào
  */
 function generateLocalFallback(userMessage: string): ChatResponse {

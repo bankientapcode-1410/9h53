@@ -9,6 +9,7 @@ import {
   DryRunResult,
 } from '../features/admin/rules/types/rule.types';
 import { ApiResponse, PageResponse } from '../features/product-catalog/types/product.types';
+import { MOCK_PRODUCTS } from './mockData';
 
 // Initial mock rules for frontend standalone dev & demo fallback
 let inMemoryRules: CompatRule[] = [
@@ -134,7 +135,7 @@ let inMemoryRules: CompatRule[] = [
   },
 ];
 
-const MOCK_METADATA: RuleSchemaMetadata = {
+export const FALLBACK_RULE_METADATA: RuleSchemaMetadata = {
   categories: [
     { category_code: 'CPU', category_name: 'Bộ vi xử lý (CPU)' },
     { category_code: 'MOTHERBOARD', category_name: 'Bo mạch chủ (Mainboard)' },
@@ -277,7 +278,7 @@ export const ruleAdminService = {
         success: true,
         status_code: 200,
         message: 'Thành công (Mock)',
-        data: MOCK_METADATA,
+        data: FALLBACK_RULE_METADATA,
         timestamp: new Date().toISOString(),
       };
     }
@@ -400,19 +401,130 @@ export const ruleAdminService = {
       const response = await apiClient.post<ApiResponse<DryRunResult>>('/api/v1/admin/rules/dry-run', request);
       return response.data;
     } catch (error) {
-      console.warn('[ruleAdminService.dryRun] API call failed, generating mock dry-run result:', error);
+      console.warn('[ruleAdminService.dryRun] API call failed, generating realistic mock dry-run result:', error);
+      const rule = request.rule_definition;
+      const testItems = request.test_items || [];
+      const srcKey = (rule.source_spec_key || '').trim().toLowerCase();
+      const tgtKey = (rule.target_spec_key || '').trim().toLowerCase();
+      const srcCat = (rule.source_category || '').trim().toUpperCase();
+      const tgtCat = (rule.target_category || '').trim().toUpperCase();
+
+      let extractedSource: any = null;
+      let extractedTarget: any = null;
+      let firstSrcProd: any = null;
+      let firstTgtProd: any = null;
+
+      // Extract source value
+      if (srcKey === '_total_tdp_w') {
+        extractedSource = testItems.reduce((sum, item) => {
+          const p = MOCK_PRODUCTS.find((prod) => prod.product_id === item.product_id);
+          return sum + Number(p?.specs?.tdp_w || 0) * (item.quantity || 1);
+        }, 0);
+      } else if (srcKey === '_count') {
+        extractedSource = testItems
+          .filter((item) => {
+            const p = MOCK_PRODUCTS.find((prod) => prod.product_id === item.product_id);
+            return p?.category?.category_code?.toUpperCase() === srcCat;
+          })
+          .reduce((sum, item) => sum + (item.quantity || 1), 0);
+      } else if (srcKey === '_sum_capacity_gb') {
+        extractedSource = testItems.reduce((sum, item) => {
+          const p = MOCK_PRODUCTS.find((prod) => prod.product_id === item.product_id);
+          return sum + Number(p?.specs?.capacity_gb || 0) * (item.quantity || 1);
+        }, 0);
+      } else {
+        const srcItem = testItems.find((item) => {
+          const p = MOCK_PRODUCTS.find((prod) => prod.product_id === item.product_id);
+          return p?.category?.category_code?.toUpperCase() === srcCat;
+        });
+        if (srcItem) {
+          firstSrcProd = MOCK_PRODUCTS.find((prod) => prod.product_id === srcItem.product_id);
+          extractedSource = firstSrcProd?.specs?.[srcKey] ?? null;
+        }
+      }
+
+      // Extract target value
+      const tgtItem = testItems.find((item) => {
+        const p = MOCK_PRODUCTS.find((prod) => prod.product_id === item.product_id);
+        return p?.category?.category_code?.toUpperCase() === tgtCat;
+      });
+      if (tgtItem) {
+        firstTgtProd = MOCK_PRODUCTS.find((prod) => prod.product_id === tgtItem.product_id);
+        extractedTarget = firstTgtProd?.specs?.[tgtKey] ?? null;
+      }
+
+      // Evaluate operator
+      let isPass = false;
+      if (extractedSource !== null && extractedTarget !== null && extractedSource !== undefined && extractedTarget !== undefined) {
+        const norm = (v: any) => String(v).trim().toLowerCase();
+        switch (rule.operator) {
+          case 'IN': {
+            const arr = Array.isArray(extractedTarget) ? extractedTarget : [extractedTarget];
+            isPass = arr.some((i: any) => norm(i) === norm(extractedSource));
+            break;
+          }
+          case 'NOT_IN': {
+            const arr = Array.isArray(extractedTarget) ? extractedTarget : [extractedTarget];
+            isPass = !arr.some((i: any) => norm(i) === norm(extractedSource));
+            break;
+          }
+          case 'EQUALS': {
+            isPass = norm(extractedSource) === norm(extractedTarget);
+            break;
+          }
+          case 'LTE': {
+            isPass = Number(extractedSource) <= Number(extractedTarget);
+            break;
+          }
+          case 'GTE': {
+            isPass = Number(extractedSource) >= Number(extractedTarget);
+            break;
+          }
+          case 'RANGE': {
+            if (Array.isArray(extractedTarget) && extractedTarget.length >= 2) {
+              isPass = Number(extractedSource) >= Number(extractedTarget[0]) && Number(extractedSource) <= Number(extractedTarget[1]);
+            }
+            break;
+          }
+          default:
+            isPass = false;
+        }
+      }
+
+      let renderedMsg: string | null = null;
+      if (!isPass) {
+        renderedMsg = rule.error_message_template
+          .replace('{source_name}', firstSrcProd?.name || srcCat)
+          .replace('{source_value}', String(extractedSource))
+          .replace('{target_name}', firstTgtProd?.name || tgtCat)
+          .replace('{target_value}', Array.isArray(extractedTarget) ? extractedTarget.join(', ') : String(extractedTarget))
+          .replace('{source_category}', srcCat)
+          .replace('{target_category}', tgtCat);
+      }
+
       return {
         success: true,
         status_code: 200,
         message: 'Chạy thử hoàn tất (Mock)',
         data: {
-          is_compatible: true,
-          extracted_source_value: 'LGA1700',
-          extracted_target_value: ['LGA1700', 'LGA1851'],
-          rendered_violation_message: null,
-          violations: [],
+          is_compatible: isPass,
+          extracted_source_value: extractedSource,
+          extracted_target_value: extractedTarget,
+          rendered_violation_message: renderedMsg,
+          violations: isPass
+            ? []
+            : [
+                {
+                  rule_id: 'dryrun-mock',
+                  rule_name: rule.rule_name,
+                  severity: rule.severity,
+                  message: renderedMsg || 'Không thỏa mãn điều kiện quy tắc tương thích',
+                  source_product: firstSrcProd ? { id: firstSrcProd.product_id, name: firstSrcProd.name, category_code: firstSrcProd.category?.category_code || '' } : null,
+                  target_product: firstTgtProd ? { id: firstTgtProd.product_id, name: firstTgtProd.name, category_code: firstTgtProd.category?.category_code || '' } : null,
+                },
+              ],
           missing_spec_warnings: [],
-          execution_time_ms: 0.35,
+          execution_time_ms: 0.38,
         },
         timestamp: new Date().toISOString(),
       };

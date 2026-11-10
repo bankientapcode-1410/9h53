@@ -49,14 +49,15 @@ class CategoryServiceTest {
     }
 
     @Test
-    @DisplayName("TC-CAT-01: Dựng cây danh mục phân cấp từ danh sách phẳng (11 categories: 3 nhóm, 8 lá)")
+    @DisplayName("TC-CAT-01: Dựng cây danh mục phân cấp từ danh sách phẳng (15 categories: 4 nhóm, 11 lá)")
     void testBuildHierarchy_Success() {
-        // 3 root groups
+        // 4 root groups
         Category g1 = Category.builder().categoryId("g1").categoryCode("PC_CORE").categoryName("Linh kiện cốt lõi").build();
         Category g2 = Category.builder().categoryId("g2").categoryCode("STORAGE_DEVICES").categoryName("Thiết bị lưu trữ").build();
         Category g3 = Category.builder().categoryId("g3").categoryCode("POWER_COOLING_CASE").categoryName("Nguồn, Tản nhiệt & Vỏ máy").build();
+        Category g4 = Category.builder().categoryId("g4").categoryCode("PERIPHERALS").categoryName("Màn hình & Thiết bị ngoại vi").build();
 
-        // 8 leaf categories
+        // 11 leaf categories
         Category c1 = Category.builder().categoryId("c1").categoryCode("CPU").categoryName("Bộ vi xử lý (CPU)").parentCategory(g1).build();
         Category c2 = Category.builder().categoryId("c2").categoryCode("MOTHERBOARD").categoryName("Bo mạch chủ (Mainboard)").parentCategory(g1).build();
         Category c3 = Category.builder().categoryId("c3").categoryCode("RAM").categoryName("Bộ nhớ trong (RAM)").parentCategory(g1).build();
@@ -68,12 +69,16 @@ class CategoryServiceTest {
         Category c7 = Category.builder().categoryId("c7").categoryCode("CASE").categoryName("Vỏ máy tính (Case)").parentCategory(g3).build();
         Category c8 = Category.builder().categoryId("c8").categoryCode("CPU_COOLER").categoryName("Tản nhiệt CPU").parentCategory(g3).build();
 
-        List<Category> allCategories = List.of(g1, g2, g3, c1, c2, c3, c4, c5, c6, c7, c8);
+        Category c9 = Category.builder().categoryId("c9").categoryCode("MONITOR").categoryName("Màn hình máy tính").parentCategory(g4).build();
+        Category c10 = Category.builder().categoryId("c10").categoryCode("KEYBOARD").categoryName("Bàn phím cơ").parentCategory(g4).build();
+        Category c11 = Category.builder().categoryId("c11").categoryCode("MOUSE").categoryName("Chuột máy tính").parentCategory(g4).build();
+
+        List<Category> allCategories = List.of(g1, g2, g3, g4, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11);
 
         List<CategoryTreeDTO> tree = categoryService.buildHierarchy(allCategories);
 
         assertNotNull(tree);
-        assertEquals(3, tree.size(), "Cây phải có 3 danh mục gốc");
+        assertEquals(4, tree.size(), "Cây phải có 4 danh mục gốc");
 
         CategoryTreeDTO root1 = tree.stream().filter(t -> t.getCategoryCode().equals("PC_CORE")).findFirst().orElseThrow();
         assertEquals(4, root1.getChildren().size(), "PC_CORE phải chứa 4 danh mục con");
@@ -83,6 +88,9 @@ class CategoryServiceTest {
 
         CategoryTreeDTO root3 = tree.stream().filter(t -> t.getCategoryCode().equals("POWER_COOLING_CASE")).findFirst().orElseThrow();
         assertEquals(3, root3.getChildren().size(), "POWER_COOLING_CASE phải chứa 3 danh mục con");
+
+        CategoryTreeDTO root4 = tree.stream().filter(t -> t.getCategoryCode().equals("PERIPHERALS")).findFirst().orElseThrow();
+        assertEquals(3, root4.getChildren().size(), "PERIPHERALS phải chứa 3 danh mục con");
     }
 
     @Test

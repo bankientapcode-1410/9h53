@@ -5,31 +5,15 @@ import {
   RuleFilterCriteria,
   RuleSchemaMetadata,
 } from '../types/rule.types';
-import { ruleAdminService } from '../../../../services/ruleAdminService';
+import { ruleAdminService, FALLBACK_RULE_METADATA } from '../../../../services/ruleAdminService';
 import { RuleFilterBar } from '../components/RuleFilterBar';
 import { RuleTable } from '../components/RuleTable';
 import { RuleFormModal } from '../components/RuleFormModal';
 import { Sliders, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-const DEFAULT_METADATA: RuleSchemaMetadata = {
-  categories: [],
-  spec_keys_by_category: {},
-  builtin_aggregate_keys: [],
-  operators: ['EQUALS', 'IN', 'NOT_IN', 'LTE', 'GTE', 'RANGE'],
-  severities: ['ERROR', 'WARNING', 'INFO'],
-  allowed_placeholders: [
-    '{source_name}',
-    '{target_name}',
-    '{source_value}',
-    '{target_value}',
-    '{source_category}',
-    '{target_category}',
-  ],
-};
-
 export const AdminRuleListPage: React.FC = () => {
   const [rules, setRules] = useState<CompatRule[]>([]);
-  const [metadata, setMetadata] = useState<RuleSchemaMetadata>(DEFAULT_METADATA);
+  const [metadata, setMetadata] = useState<RuleSchemaMetadata>(FALLBACK_RULE_METADATA);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -222,13 +206,16 @@ export const AdminRuleListPage: React.FC = () => {
       />
 
       {/* Modal Create / Edit with Sandbox */}
-      <RuleFormModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleSaveRule}
-        initialData={editingRule}
-        metadata={metadata}
-      />
+      {isModalOpen && (
+        <RuleFormModal
+          key={editingRule ? editingRule.rule_id : 'new-rule'}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleSaveRule}
+          initialData={editingRule}
+          metadata={metadata}
+        />
+      )}
     </div>
   );
 };

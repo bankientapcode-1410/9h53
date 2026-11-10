@@ -185,4 +185,56 @@ class ProductAdminServiceTest {
         assertEquals(0, adminOut.getStockQuantity());
         assertFalse(adminOut.getInStock());
     }
+
+    @Test
+    @DisplayName("TC-PROD-28: Hiển thị linh kiện ngưng kinh doanh trong Quản trị Kho Linh Kiện và sắp xếp xuống cuối bảng")
+    void testAdminProductListing_InactiveProductsSortedToEnd() {
+        com.smartpc.modules.product.dto.request.ProductFilterCriteria criteria =
+                com.smartpc.modules.product.dto.request.ProductFilterCriteria.builder().build();
+
+        org.springframework.data.domain.PageRequest pageRequest = org.springframework.data.domain.PageRequest.of(0, 20);
+
+        Category cat = Category.builder().categoryCode("CPU").categoryName("CPU").build();
+        Product activeProduct = Product.builder()
+                .productId("p-active")
+                .name("Intel Core i5-13600K")
+                .brand("INTEL")
+                .category(cat)
+                .isActive(true)
+                .price(7000000)
+                .stockQuantity(10)
+                .build();
+
+        Product inactiveProduct = Product.builder()
+                .productId("p-inactive")
+                .name("Intel Core i3-10100")
+                .brand("INTEL")
+                .category(cat)
+                .isActive(false)
+                .price(2000000)
+                .stockQuantity(5)
+                .build();
+
+        org.springframework.data.domain.Page<Product> mockPage = new org.springframework.data.domain.PageImpl<>(
+                java.util.List.of(activeProduct, inactiveProduct),
+                pageRequest,
+                2
+        );
+
+        when(productRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class)))
+                .thenAnswer(invocation -> {
+                    org.springframework.data.domain.Pageable p = invocation.getArgument(1);
+                    org.springframework.data.domain.Sort.Order firstOrder = p.getSort().iterator().next();
+                    assertEquals("isActive", firstOrder.getProperty());
+                    assertTrue(firstOrder.isDescending(), "Sort đầu tiên phải là isActive DESC để đưa SP ngưng kinh doanh xuống cuối");
+                    return mockPage;
+                });
+
+        var response = productAdminService.getAdminProducts(criteria, pageRequest);
+
+        assertNotNull(response);
+        assertEquals(2, response.getContent().size());
+        assertTrue(response.getContent().get(0).getIsActive(), "Sản phẩm đầu tiên đang kinh doanh (is_active=true)");
+        assertFalse(response.getContent().get(1).getIsActive(), "Sản phẩm thứ hai ngưng kinh doanh (is_active=false) được xếp sau");
+    }
 }

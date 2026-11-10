@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useProductDetail } from '../hooks/useProductDetail';
 import { ProductSpecsTable } from '../components/ProductSpecsTable';
+import { getProductImageFallback } from '@/utils/productImageFallback';
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -123,12 +124,11 @@ export const ProductDetailPage: React.FC = () => {
         <div className="lg:col-span-5 space-y-4">
           <div className="relative aspect-square bg-slate-50 rounded-2xl border border-slate-200 p-6 flex items-center justify-center overflow-hidden">
             <img
-              src={activeImage}
+              src={activeImage || getProductImageFallback(product.category?.category_code)}
               alt={product.name}
               className="w-full h-full object-contain"
               onError={(e) => {
-                (e.target as HTMLImageElement).src =
-                  'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=600&q=80';
+                (e.target as HTMLImageElement).src = getProductImageFallback(product.category?.category_code);
               }}
             />
             {product.benchmark_score > 0 && (

@@ -162,18 +162,33 @@ export const DynamicSpecsEditor: React.FC<DynamicSpecsEditorProps> = ({
                 </div>
               ) : field.allowedValues && field.allowedValues.length > 0 ? (
                 <select
-                  value={val !== undefined && val !== null ? String(val) : ''}
+                  value={
+                    val !== undefined && val !== null
+                      ? field.key === 'layout'
+                        ? String(val).replace(/^compact\s+/i, '')
+                        : String(val)
+                      : ''
+                  }
                   onChange={(e) => handleFieldChange(field.key, e.target.value)}
                   className={`w-full text-xs px-3 py-2 border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-smart-blue/20 ${
                     fieldError ? 'border-smart-red bg-red-50/20' : 'border-slate-200 focus:border-smart-blue'
                   }`}
                 >
                   <option value="">-- Chọn {field.label} --</option>
-                  {field.allowedValues.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
+                  {field.allowedValues.map((opt) => {
+                    let optLabel = opt;
+                    if (field.key === 'led_type') {
+                      if (opt === 'RGB') optLabel = 'LED RGB (16.8 triệu màu)';
+                      else if (opt === 'Monochrome') optLabel = 'LED Đơn sắc (White/Single-color)';
+                      else if (opt === 'Rainbow') optLabel = 'LED Rainbow (Đa sắc cố định)';
+                      else if (opt === 'None') optLabel = 'Không LED (No Backlight)';
+                    }
+                    return (
+                      <option key={opt} value={opt}>
+                        {optLabel}
+                      </option>
+                    );
+                  })}
                 </select>
               ) : (
                 <input

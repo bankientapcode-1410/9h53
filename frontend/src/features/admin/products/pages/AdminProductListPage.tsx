@@ -9,6 +9,8 @@ import {
   Square,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Flame,
   Power,
   Layers,
@@ -19,6 +21,7 @@ import { useCategoryStore } from '../../../../stores/useCategoryStore';
 import { VectorSyncBadge } from '../components/VectorSyncBadge';
 import { ManualSyncButton } from '../components/ManualSyncButton';
 import { ProductFormModal } from '../components/ProductFormModal';
+import { getProductImageFallback } from '@/utils/productImageFallback';
 
 export const AdminProductListPage: React.FC = () => {
   const { fetchCategories, getLeafCategories } = useCategoryStore();
@@ -31,6 +34,26 @@ export const AdminProductListPage: React.FC = () => {
   const [size] = useState<number>(10);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalElements, setTotalElements] = useState<number>(0);
+  const [pageInput, setPageInput] = useState<string>('1');
+
+  useEffect(() => {
+    setPageInput(String(page + 1));
+  }, [page]);
+
+  const handlePageJump = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const targetPageNum = parseInt(pageInput.trim(), 10);
+    if (isNaN(targetPageNum) || targetPageNum < 1) {
+      setPage(0);
+      setPageInput('1');
+    } else if (targetPageNum > totalPages) {
+      setPage(totalPages - 1);
+      setPageInput(String(totalPages));
+    } else {
+      setPage(targetPageNum - 1);
+      setPageInput(String(targetPageNum));
+    }
+  };
 
   // Filters
   const [search, setSearch] = useState<string>('');
@@ -306,7 +329,13 @@ export const AdminProductListPage: React.FC = () => {
                     <tr
                       key={p.product_id}
                       className={`transition-colors hover:bg-blue-50/30 ${
-                        isSelected ? 'bg-blue-50/50' : isDeleted ? 'bg-slate-50 opacity-60' : 'bg-white'
+                        isSelected
+                          ? 'bg-blue-50/50'
+                          : isDeleted
+                          ? 'bg-slate-50 opacity-60'
+                          : !p.is_active
+                          ? 'bg-slate-50/70 text-slate-500'
+                          : 'bg-white'
                       }`}
                     >
                       {/* Checkbox */}
@@ -327,9 +356,12 @@ export const AdminProductListPage: React.FC = () => {
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <img
-                            src={p.image_url || 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=100&q=80'}
+                            src={p.image_url || getProductImageFallback(p.category?.category_code)}
                             alt={p.name}
                             className="w-10 h-10 rounded-xl object-contain bg-slate-50 border border-slate-200 p-0.5 flex-shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = getProductImageFallback(p.category?.category_code);
+                            }}
                           />
                           <div className="space-y-0.5">
                             <span className="font-bold text-slate-800 line-clamp-1" title={p.name}>
@@ -343,9 +375,11 @@ export const AdminProductListPage: React.FC = () => {
                                   {p.benchmark_score} pts
                                 </span>
                               )}
-                              {isDeleted && (
+                              {isDeleted ? (
                                 <span className="text-smart-red font-bold">(ĐÃ XÓA)</span>
-                              )}
+                              ) : !p.is_active ? (
+                                <span className="text-amber-600 font-semibold">(Tạm ngưng)</span>
+                              ) : null}
                             </div>
                           </div>
                         </div>
@@ -381,7 +415,7 @@ export const AdminProductListPage: React.FC = () => {
                               ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
                               : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200'
                           }`}
-                          title={p.is_active ? 'Nhấn để ẩn sản phẩm' : 'Nhấn để kích hoạt kinh doanh'}
+                          title={p.is_active ? 'Nhấn để tắt kinh doanh (đưa xuống cuối danh sách)' : 'Nhấn để bật kinh doanh'}
                         >
                           <Power className="w-3.5 h-3.5" />
                         </button>
@@ -441,29 +475,67 @@ export const AdminProductListPage: React.FC = () => {
 
         {/* Pagination Bar */}
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between text-xs">
+          <div className="px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <span className="text-slate-500">
               Tổng số <span className="font-bold text-slate-800">{totalElements}</span> linh kiện
             </span>
 
-            <div className="flex items-center gap-1.5">
-              <button
-                disabled={page === 0}
-                onClick={() => setPage((p) => p - 1)}
-                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="px-2 font-bold text-slate-700">
-                {page + 1} / {totalPages}
-              </span>
-              <button
-                disabled={page >= totalPages - 1}
-                onClick={() => setPage((p) => p + 1)}
-                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+            <div className="flex items-center gap-2">
+              {/* Navigation buttons: First & Prev */}
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={page === 0}
+                  onClick={() => setPage(0)}
+                  className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition text-slate-600"
+                  title="Trang đầu"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </button>
+                <button
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition text-slate-600"
+                  title="Trang trước"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Jump to Page input & Total */}
+              <form onSubmit={handlePageJump} className="flex items-center gap-1.5 px-2">
+                <span className="text-slate-500 font-medium">Trang</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={totalPages}
+                  value={pageInput}
+                  onChange={(e) => setPageInput(e.target.value)}
+                  onBlur={() => handlePageJump()}
+                  className="w-14 text-center font-bold text-slate-800 py-1 px-1 border border-slate-200 rounded-lg focus:outline-none focus:border-smart-blue bg-white"
+                  title="Nhập số trang và nhấn Enter"
+                />
+                <span className="text-slate-500 font-medium">/ {totalPages}</span>
+              </form>
+
+              {/* Navigation buttons: Next & Last */}
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition text-slate-600"
+                  title="Trang sau"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage(totalPages - 1)}
+                  className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition text-slate-600"
+                  title="Trang cuối"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -161,23 +161,24 @@ flowchart TD
 
 ---
 
-## 5. Quy chuẩn Tự động Đồng bộ & Chạy lại Ứng dụng sau khi Sửa Code (Live Reload & Container Update Rule)
+## 5. Quy chuẩn Phát triển Cục bộ & Triển khai Docker (Local Dev First & Docker Release Rule)
 
 > [!IMPORTANT]
-> **BẮT BUỘC CẬP NHẬT LẠI ỨNG DỤNG / CONTAINER SAU MỖI LẦN SỬA CODE:**
-> Môi trường phát triển của dự án đang chạy qua Docker container (Nginx frontend phục vụ cổng `3000` và Spring Boot backend phục vụ cổng `8080`). Do đó, sau mỗi lần chỉnh sửa mã nguồn, AI Agent **BẮT BUỘC PHẢI CHẠY LẠI / ĐỒNG BỘ ĐỂ CẬP NHẬT THAY ĐỔI MỚI NHẤT LÊN TRANG**:
+> **ƯU TIÊN LOCAL DEV TRONG QUÁ TRÌNH PHÁT TRIỂN (LOCAL DEV FIRST):**
+> Trong giai đoạn phát triển, dự án ưu tiên chạy trực tiếp ở máy trạm (Localhost) để tận dụng Hot Module Replacement (HMR) phản hồi tức thì, **chỉ đóng gói và chạy Docker khi hoàn thiện tính năng hoặc release**.
 > 
 > 1. **Đối với Frontend (`frontend/`):**
->    * Sau khi sửa đổi code React/TypeScript, phải lập tức:
->      1. Chạy `npm --prefix frontend run build` để kiểm tra TypeScript và biên dịch bundle mới vào `frontend/dist`.
->      2. Đẩy ngay bản build vào container đang chạy và reload Nginx:
->         ```bash
->         docker cp frontend/dist/. smartpc-frontend:/usr/share/nginx/html/
->         docker exec smartpc-frontend nginx -s reload
->         ```
->      3. Đồng thời build lại Docker image để đồng bộ lâu dài: `docker compose build frontend` (và `docker compose up -d frontend` nếu cần).
->    * **Tuyệt đối không dừng lại ở việc sửa file trên host mà không cập nhật vào container**, tránh tình trạng người dùng mở trang vẫn thấy giao diện cũ chưa cập nhật.
-> 2. **Đối với Backend (`backend/`):**
->    * Khi chỉnh sửa mã nguồn Java, config hoặc migration Flyway SQL: kiểm tra biên dịch bằng Maven và cập nhật/khởi động lại container backend (`docker compose restart backend` hoặc `docker compose build backend && docker compose up -d backend`).
-> 3. **Hướng dẫn Người dùng:**
->    * Luôn thông báo rõ trạng thái cập nhật và nhắc người dùng bấm `Ctrl + F5` (hoặc `Cmd + Shift + R`) trên trình duyệt để xóa cache tĩnh của trình duyệt.
+>    * Chạy trực tiếp qua Vite dev server: `npm --prefix frontend run dev` hoặc lệnh wrapper `dev.cmd ui` trên cổng `3000`.
+>    * Nhờ cơ chế Vite HMR, mọi thay đổi trong file React/TypeScript/CSS sẽ cập nhật ngay lập tức trên trình duyệt mà không cần build lại hay khởi động lại server.
+>    * **Tuyệt đối không ép buộc build bundle hay copy file vào Docker container Nginx sau mỗi lần sửa nhỏ**, tránh gây độ trễ không cần thiết cho quá trình dev.
+>    * Lưu ý: Đảm bảo container `smartpc-frontend` đã dừng (`docker stop smartpc-frontend`) để giải phóng cổng `3000` cho Vite dev server.
+> 2. **Đối với Backend & Hạ tầng Dữ liệu:**
+>    * Mô hình phát triển khuyên dùng (Hybrid Local Dev): Backend API (port 8080), MySQL (port 3307) và Redis (port 6379) chạy nền qua Docker (`docker compose up -d backend mysql redis`), trong khi Frontend chạy `npm run dev` ở máy host và tự động proxy `/api` sang `http://localhost:8080`.
+>    * Nếu chạy thuần Localhost không dùng Docker: Có thể chạy Spring Boot backend qua Maven/Java nếu máy đã cài JDK 21+, hoặc Frontend có thể chạy độc lập với cơ chế Mock Data Fallback tích hợp sẵn.
+> 3. **Đóng gói & Kiểm thử Docker (Release / Complete Phase):**
+>    * Chỉ khi hoàn thiện tính năng hoặc chuẩn bị bàn giao/triển khai production, mới tiến hành kiểm tra đóng gói Docker toàn diện:
+>      ```bash
+>      npm --prefix frontend run build
+>      docker compose build
+>      docker compose up -d
+>      ```

@@ -378,14 +378,38 @@ Khi bổ sung trang Quản trị Tập luật (`/admin/rules`) vào `frontend/sr
 Bố cục màn hình `AdminRuleListPage.tsx` gồm 2 khu vực trực quan:
 1. **Danh sách & Bộ lọc Tập luật (`RuleFilterBar.tsx` & `RuleTable.tsx`):**
    * **Thanh lọc nhanh:** Lọc theo `Danh mục nguồn (Source Category)` (gồm 8 danh mục chuẩn + `_SYSTEM`), `Danh mục đích (Target Category)`, `Mức độ (ERROR / WARNING / INFO)`, `Trạng thái (Active / Inactive)`, và ô tìm kiếm từ khóa (`keyword` tìm trên `rule_name`, `source_spec_key`, `target_spec_key`, `error_message_template`).
-   * **Bảng dữ liệu:** Hiển thị cột `Độ ưu tiên (Priority)`, `Tên quy tắc`, `Luồng đối chiếu (Source → Target)`, `Biểu thức điều kiện (source_spec_key [OPERATOR] target_spec_key)`, `Badge mức độ (ERROR đỏ / WARNING vàng / INFO xanh)`, `Nút gạt (Toggle Switch) Bật/Tắt nhanh`, và nút `Chỉnh sửa / Xóa`.
+   * **Bảng dữ liệu tinh gọn (Compact & Responsive Table Layout):**
+     * Thiết kế chống tràn ngang (No Horizontal Cutoff): Tổng chiều rộng các cột được tối ưu (~880px - 950px) để hiển thị trọn vẹn 100% trên mọi độ phân giải màn hình tiêu chuẩn (kể cả laptop 1280px / 1366px với tỉ lệ DPI scale 125%) mà không bị che khuất cột Trạng thái hay nút Thao tác.
+     * **Cột Độ ưu tiên (`Priority`):** Chiều rộng cố định `w-12 text-center`, pill số thứ tự `w-6 h-6 text-xs`.
+     * **Cột Tên quy tắc (`rule_name`):** Thu hẹp độ rộng giới hạn `w-[220px] lg:w-[260px]`, tên luật cắt ngắn `truncate max-w-[200px] lg:max-w-[240px]` kèm tooltip `title={rule.rule_name}`; chuỗi thông báo lỗi phụ trợ `text-[11px] text-slate-400 truncate max-w-[200px] lg:max-w-[240px] mt-0.5` kèm tooltip `title={rule.error_message_template}`.
+     * **Cột Luồng đối chiếu (`Source → Target`):** Chiều rộng `w-36 lg:w-40`, pill nhỏ gọn `px-2 py-0.5 text-[11px] font-medium`.
+     * **Cột Biểu thức điều kiện (`Condition`):** Chiều rộng `w-44 lg:w-52`, mono chip `px-2 py-0.5 text-[11px] bg-slate-50 border border-slate-200 rounded-md`, khóa thông số cắt ngắn `truncate max-w-[80px]` kèm `title`.
+     * **Cột Mức độ (`Severity`):** Chiều rộng `w-24 text-center`, hiển thị `RuleSeverityBadge size="sm"`.
+     * **Cột Trạng thái (`Status`):** Chiều rộng `w-24 text-center`, nút gạt (Toggle Switch) thu gọn `px-2 py-0.5 text-[11px] font-semibold`.
+     * **Cột Thao tác (`Actions`):** Chiều rộng `w-20 text-center`, icon button thu gọn `p-1` (Sửa/Xóa).
+     * **Padding ô:** Giảm từ `py-3 px-4` xuống `py-2.5 px-3` (hoặc `px-2.5`) nhằm tối ưu diện tích hiển thị và độ thông thoáng.
 2. **Modal Tạo/Sửa Luật kèm Khu vực Chạy thử (`RuleFormModal.tsx` & `DryRunSandboxPanel.tsx`):**
+   * **Cơ chế Đồng bộ Hóa Quy Tắc Thao Tác (Rule Operation Synchronization):**
+     * Khi Admin bấm "Chỉnh sửa" bất kỳ quy tắc nào trong bảng (`initialData != null`), toàn bộ state biểu mẫu (`formData`) phải lập tức đồng bộ 100% với quy tắc đang thao tác: `rule_name`, `source_category`, `source_spec_key`, `operator`, `target_category`, `target_spec_key`, `severity`, `priority`, `error_message_template`, `is_active`.
+     * Sử dụng `useEffect` lắng nghe thay đổi của `initialData` & `isOpen`, đồng thời kết hợp `key={editingRule ? editingRule.rule_id : 'new-rule'}` tại `AdminRuleListPage.tsx` để đảm bảo form luôn được re-initialize sạch sẽ, tuyệt đối không bị lưu vết state mặc định hoặc state của quy tắc mở trước đó.
+     * Khi bấm "Thêm Quy Tắc Mới" (`initialData == null`), form tự động reset về trạng thái mẫu ban đầu sạch sẽ.
    * **Trình dựng biểu thức trực quan (`VisualExpressionBuilder.tsx`):**
-     * Chọn `Source Category` $\rightarrow$ Dropdown `Source Spec Key` tự động gợi ý các khóa thông số của danh mục đó từ API `/api/v1/admin/rules/metadata` cộng với các khóa tổng hợp (`_count`, `_sum_capacity_gb`, `_total_tdp_w`...). Nếu chọn `_SYSTEM`, tự động khóa `source_spec_key = "_total_tdp_w"`.
-     * Chọn `Operator` (`EQUALS`, `IN`, `NOT_IN`, `LTE`, `GTE`, `RANGE`) $\rightarrow$ tự động lọc chỉ giữ các toán tử hợp lệ theo kiểu dữ liệu của `source_spec_key`.
-     * Chọn `Target Category` $\rightarrow$ Dropdown `Target Spec Key` tự động gợi ý các khóa thông số tĩnh của danh mục đích.
-   * **Trình soạn thông báo lỗi (`MessageTemplateEditor.tsx`):** Có các nút bấm chèn nhanh biến nội suy (`+ {source_name}`, `+ {source_value}`, `+ {target_name}`, `+ {target_value}`, `+ {source_category}`, `+ {target_category}`).
-   * **Khung kiểm thử trực tiếp (`DryRunSandboxPanel.tsx`):** Admin chọn các sản phẩm mẫu trong kho (tự động lọc theo `source_category` và `target_category` đang chọn) kèm số lượng (`quantity`), bấm **"Chạy thử (Test Rule)"** để xem ngay kết quả `PASS` / `FAIL`, giá trị trích xuất thực tế và câu thông báo lỗi sau nội suy.
+     * Chọn `Source Category` $\rightarrow$ Dropdown `Source Spec Key` hiển thị danh sách các khóa thông số thực tế của danh mục nguồn từ metadata (kèm các khóa tổng hợp `_count`, `_sum_capacity_gb`, `_total_tdp_w`...). Khi đổi `source_category`, tự động chuyển `source_spec_key` sang khóa hợp lệ đầu tiên của danh mục mới (hoặc khóa cố định `_total_tdp_w` nếu chọn `_SYSTEM`). Hỗ trợ chế độ nhập khóa tùy chỉnh linh hoạt.
+     * Chọn `Operator` (`EQUALS`, `IN`, `NOT_IN`, `LTE`, `GTE`, `RANGE`) $\rightarrow$ dropdown hiển thị toán tử kèm phụ đề giải thích ý nghĩa logic rõ ràng.
+     * Chọn `Target Category` $\rightarrow$ Dropdown `Target Spec Key` hiển thị danh sách các khóa thông số thực tế của danh mục đích. Khi đổi `target_category`, tự động chuyển `target_spec_key` sang khóa hợp lệ của danh mục đích mới.
+     * **Thanh tổng kết biểu thức trực tiếp (Live Expression Summary):** Phản ánh chính xác tức thì biểu thức logic dạng `{source_category}.{source_spec_key} {operator} {target_category}.{target_spec_key}` của quy tắc đang thao tác.
+   * **Trình soạn thông báo lỗi (`MessageTemplateEditor.tsx`):** Tự động nạp đúng mẫu thông báo của quy tắc được thao tác. Có các nút bấm chèn nhanh biến nội suy (`+ {source_name}`, `+ {source_value}`, `+ {target_name}`, `+ {target_value}`, `+ {source_category}`, `+ {target_category}`).
+   * **Khung kiểm thử trực tiếp (`DryRunSandboxPanel.tsx`):**
+     * **Phân tách 2 vùng chọn linh kiện Nguồn & Đích (Dual-Column Scoped Selection):**
+       - Tách giao diện cấu hình test thành 2 vùng độc lập: **Linh kiện Vế Nguồn (`Source Products`)** và **Linh kiện Vế Đích (`Target Products`)**.
+       - Bộ lọc linh kiện giới hạn nghiêm ngặt: Vùng Nguồn chỉ cho phép chọn sản phẩm thuộc `source_category` của quy tắc (nếu `_SYSTEM`, cho phép chọn linh kiện tiêu thụ điện như CPU, GPU); Vùng Đích chỉ cho phép chọn sản phẩm thuộc `target_category`. Ngăn chặn hoàn toàn việc chọn sản phẩm không liên quan đến quy tắc được thao tác.
+     * **Hiển thị trực quan Giá trị Thuộc tính Dùng để So sánh (Extracted Spec Value Preview):**
+       - Trên từng thẻ sản phẩm test được chọn, hiển thị trực tiếp giá trị trích xuất từ JSON specs:
+         + Linh kiện Nguồn: Hiển thị giá trị của khóa `source_spec_key` (hoặc thông số đóng góp nếu là khóa tổng hợp như TDP/khe cắm). Nếu sản phẩm thiếu khóa thông số này, lập tức hiển thị badge cảnh báo màu vàng/đỏ `⚠️ Thiếu thuộc tính [source_spec_key]`.
+         + Linh kiện Đích: Hiển thị giá trị của khóa `target_spec_key` (ví dụ mảng socket hỗ trợ, chuẩn kích thước, công suất định mức...). Nếu sản phẩm thiếu khóa, hiển thị badge cảnh báo tương ứng.
+     * **Bảng Đối chiếu Kết quả Chạy thử (Detailed Comparison Result Box):**
+       - Hiển thị phép đối chiếu trực quan thực tế: `[Giá trị Nguồn trích xuất] [TOÁN TỬ] [Giá trị Đích trích xuất] → PASS (Tương thích) / FAIL (Vi phạm)`.
+       - Hiển thị câu thông báo lỗi sau khi nội suy biến `{source_name}`, `{source_value}`, `{target_name}`, `{target_value}` và danh sách cảnh báo thiếu specs.
 
 ---
 

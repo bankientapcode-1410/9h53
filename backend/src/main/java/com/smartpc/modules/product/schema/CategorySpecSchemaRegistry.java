@@ -355,6 +355,126 @@ public class CategorySpecSchemaRegistry {
                         .minValue(0.0001)
                         .build()
         ));
+
+        // 9. MONITOR
+        registry.put("MONITOR", List.of(
+                FieldDefinition.builder()
+                        .key("screen_size_inch")
+                        .label("Kích thước màn hình")
+                        .type(FieldType.NUMBER)
+                        .required(true)
+                        .filterable(true)
+                        .unit("inch")
+                        .minValue(10.0)
+                        .build(),
+                FieldDefinition.builder()
+                        .key("resolution")
+                        .label("Độ phân giải")
+                        .type(FieldType.STRING)
+                        .required(true)
+                        .filterable(true)
+                        .allowedValues(List.of("FHD (1920x1080)", "2K QHD (2560x1440)", "4K UHD (3840x2160)"))
+                        .build(),
+                FieldDefinition.builder()
+                        .key("refresh_rate_hz")
+                        .label("Tần số quét")
+                        .type(FieldType.INTEGER)
+                        .required(true)
+                        .filterable(true)
+                        .unit("Hz")
+                        .minValue(30.0)
+                        .build(),
+                FieldDefinition.builder()
+                        .key("panel_type")
+                        .label("Tấm nền")
+                        .type(FieldType.STRING)
+                        .required(true)
+                        .filterable(true)
+                        .allowedValues(List.of("IPS", "VA", "OLED", "Fast IPS"))
+                        .build(),
+                FieldDefinition.builder()
+                        .key("response_time_ms")
+                        .label("Thời gian phản hồi")
+                        .type(FieldType.NUMBER)
+                        .required(false)
+                        .filterable(false)
+                        .unit("ms")
+                        .minValue(0.1)
+                        .build()
+        ));
+
+        // 10. KEYBOARD
+        registry.put("KEYBOARD", List.of(
+                FieldDefinition.builder()
+                        .key("connection_type")
+                        .label("Chuẩn kết nối")
+                        .type(FieldType.STRING)
+                        .required(true)
+                        .filterable(true)
+                        .allowedValues(List.of("Wired", "Wireless", "Bluetooth / Wireless / Type-C"))
+                        .build(),
+                FieldDefinition.builder()
+                        .key("switch_type")
+                        .label("Loại Switch")
+                        .type(FieldType.STRING)
+                        .required(true)
+                        .filterable(true)
+                        .allowedValues(List.of("Mechanical Red", "Mechanical Blue", "Mechanical Brown", "Optical Switch"))
+                        .build(),
+                FieldDefinition.builder()
+                        .key("layout")
+                        .label("Layout phím")
+                        .type(FieldType.STRING)
+                        .required(true)
+                        .filterable(true)
+                        .allowedValues(List.of("Fullsize 104", "Tenkeyless (TKL)", "75%", "68%"))
+                        .build(),
+                FieldDefinition.builder()
+                        .key("led_type")
+                        .label("Đèn LED")
+                        .type(FieldType.STRING)
+                        .required(false)
+                        .filterable(true)
+                        .allowedValues(List.of("RGB", "Monochrome", "Rainbow", "None"))
+                        .build()
+        ));
+
+        // 11. MOUSE
+        registry.put("MOUSE", List.of(
+                FieldDefinition.builder()
+                        .key("connection_type")
+                        .label("Chuẩn kết nối")
+                        .type(FieldType.STRING)
+                        .required(true)
+                        .filterable(true)
+                        .allowedValues(List.of("Wired", "Wireless", "Bluetooth / Wireless"))
+                        .build(),
+                FieldDefinition.builder()
+                        .key("dpi")
+                        .label("Độ nhạy (DPI)")
+                        .type(FieldType.INTEGER)
+                        .required(true)
+                        .filterable(true)
+                        .unit("DPI")
+                        .minValue(100.0)
+                        .build(),
+                FieldDefinition.builder()
+                        .key("sensor")
+                        .label("Cảm biến")
+                        .type(FieldType.STRING)
+                        .required(false)
+                        .filterable(false)
+                        .build(),
+                FieldDefinition.builder()
+                        .key("weight_g")
+                        .label("Trọng lượng")
+                        .type(FieldType.INTEGER)
+                        .required(false)
+                        .filterable(false)
+                        .unit("g")
+                        .minValue(10.0)
+                        .build()
+        ));
     }
 
     public List<FieldDefinition> getSchema(String categoryCode) {

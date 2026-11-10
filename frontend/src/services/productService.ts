@@ -335,6 +335,81 @@ export const productService = {
             count,
           })),
         });
+      } else if (categoryCode === 'MONITOR') {
+        const resCounts: Record<string, number> = {};
+        const panelCounts: Record<string, number> = {};
+        catProducts.forEach((p) => {
+          const r = p.specs.resolution;
+          if (r) resCounts[r] = (resCounts[r] || 0) + 1;
+          const panel = p.specs.panel_type;
+          if (panel) panelCounts[panel] = (panelCounts[panel] || 0) + 1;
+        });
+        if (Object.keys(resCounts).length > 0) {
+          facets.push({
+            code: 'resolution',
+            label: 'Độ phân giải',
+            filter_type: 'CHIP',
+            options: Object.entries(resCounts).map(([k, count]) => ({ label: k, value: k, count })),
+          });
+        }
+        if (Object.keys(panelCounts).length > 0) {
+          facets.push({
+            code: 'panel_type',
+            label: 'Tấm nền',
+            filter_type: 'CHIP',
+            options: Object.entries(panelCounts).map(([k, count]) => ({ label: k, value: k, count })),
+          });
+        }
+      } else if (categoryCode === 'KEYBOARD') {
+        const layoutCounts: Record<string, number> = {};
+        const switchCounts: Record<string, number> = {};
+        const ledCounts: Record<string, number> = {};
+        catProducts.forEach((p) => {
+          const l = p.specs.layout;
+          if (l) layoutCounts[l] = (layoutCounts[l] || 0) + 1;
+          const sw = p.specs.switch_type;
+          if (sw) switchCounts[sw] = (switchCounts[sw] || 0) + 1;
+          const led = p.specs.led_type;
+          if (led) ledCounts[led] = (ledCounts[led] || 0) + 1;
+        });
+        if (Object.keys(layoutCounts).length > 0) {
+          facets.push({
+            code: 'layout',
+            label: 'Layout',
+            filter_type: 'CHIP',
+            options: Object.entries(layoutCounts).map(([k, count]) => ({ label: k, value: k, count })),
+          });
+        }
+        if (Object.keys(switchCounts).length > 0) {
+          facets.push({
+            code: 'switch_type',
+            label: 'Loại Switch',
+            filter_type: 'CHIP',
+            options: Object.entries(switchCounts).map(([k, count]) => ({ label: k, value: k, count })),
+          });
+        }
+        if (Object.keys(ledCounts).length > 0) {
+          facets.push({
+            code: 'led_type',
+            label: 'Đèn LED',
+            filter_type: 'CHIP',
+            options: Object.entries(ledCounts).map(([k, count]) => ({ label: k, value: k, count })),
+          });
+        }
+      } else if (categoryCode === 'MOUSE') {
+        const connCounts: Record<string, number> = {};
+        catProducts.forEach((p) => {
+          const c = p.specs.connection_type;
+          if (c) connCounts[c] = (connCounts[c] || 0) + 1;
+        });
+        if (Object.keys(connCounts).length > 0) {
+          facets.push({
+            code: 'connection_type',
+            label: 'Kết nối',
+            filter_type: 'CHIP',
+            options: Object.entries(connCounts).map(([k, count]) => ({ label: k, value: k, count })),
+          });
+        }
       }
 
       // Price options

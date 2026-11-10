@@ -911,10 +911,10 @@ sequenceDiagram
 
 > **Tài liệu Thiết kế Chi tiết (Detailed Design - DD) theo từng phân hệ:**
 > * **Core Rule Engine - Quản lý Tập luật & Đánh giá Tương thích (UC6 - v1.2 Hardening):** [docs/detail-design/dd-uc6-core-rule-engine.md](docs/detail-design/dd-uc6-core-rule-engine.md) | [Kế hoạch Triển khai](docs/implementation-plan/plan-uc6-core-rule-engine.md)
-> * **Quản lý Sản phẩm & Danh mục (UC1a, UC5):** [docs/detail-design/dd-uc5-product-catalog.md](docs/detail-design/dd-uc5-product-catalog.md)
+> * **Quản lý Sản phẩm & Danh mục (UC1a, UC5 - v1.6 Đa dạng hóa Đèn LED Bàn phím cơ & Mở rộng Bộ lọc led_type):** [docs/detail-design/dd-uc5-product-catalog.md](docs/detail-design/dd-uc5-product-catalog.md) | [Kế hoạch Triển khai](docs/implementation-plan/plan-uc5-product-catalog.md)
 > * **Chat Tư vấn Phần cứng với AI (UC1):** [docs/detail-design/dd-uc1-ai-chat.md](docs/detail-design/dd-uc1-ai-chat.md) | [Kế hoạch Triển khai](docs/implementation-plan/plan-uc1-ai-chat.md)
 > * **Java Runtime Upgrade (Java 25 LTS):** [docs/detail-design/dd-java-runtime-upgrade.md](docs/detail-design/dd-java-runtime-upgrade.md)
-> * **Local Dev & Demo Automation Script (v1.2 - Tự động Sinh Sản phẩm Kho hàng khi Khởi động Docker & Dev Run):** [docs/detail-design/dd-local-dev-automation.md](docs/detail-design/dd-local-dev-automation.md)
+> * **Local Dev & Demo Automation Script (v1.3 - Tự động Sinh Sản phẩm Kho hàng & Cấu hình IDE F5 Launch):** [docs/detail-design/dd-local-dev-automation.md](docs/detail-design/dd-local-dev-automation.md)
 
 ## 5. Thiết kế giao diện người dùng (UI/UX)
 
@@ -1061,7 +1061,7 @@ project1/
 ├── dev.cmd           # Wrapper khởi chạy nhanh môi trường Local Dev / Demo 1-click trên Windows
 └── docs/             # Tài liệu kỹ thuật dự án: Thư mục thiết kế chi tiết (docs/detail-design/), kế hoạch triển khai (docs/implementation-plan/), hình ảnh mockup giao diện (docs/screens/) và đặc tả kiến trúc
     ├── detail-design/
-    │   ├── dd-uc5-product-catalog.md      # Thiết kế chi tiết Quản lý Sản phẩm & Danh mục (UC1a, UC5 - v1.1)
+    │   ├── dd-uc5-product-catalog.md      # Thiết kế chi tiết Quản lý Sản phẩm & Danh mục (UC1a, UC5 - v1.6 Đa dạng hóa Đèn LED Phím cơ & Mở rộng Bộ lọc)
     │   ├── dd-uc6-core-rule-engine.md     # Thiết kế chi tiết Core Rule Engine & Quản lý Tập luật (UC6 - v1.2)
     │   ├── dd-java-runtime-upgrade.md     # Thiết kế nâng cấp Java 25 LTS
     │   └── dd-local-dev-automation.md     # Thiết kế kịch bản tự động hóa Local Dev / Demo & Sinh kho hàng tự động (v1.2)

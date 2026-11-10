@@ -60,4 +60,49 @@ class CategorySpecSchemaRegistryTest {
             }
         }
     }
+
+    @Test
+    @DisplayName("TC-PROD-24: Đăng ký schema 3 danh mục ngoại vi MONITOR, KEYBOARD, MOUSE")
+    void testPeripheralsSchemaRegistered() {
+        List<String> peripheralCategories = List.of("MONITOR", "KEYBOARD", "MOUSE");
+        for (String cat : peripheralCategories) {
+            assertTrue(registry.hasCategory(cat), "Danh mục " + cat + " phải được đăng ký trong Registry");
+            List<FieldDefinition> fields = registry.getSchema(cat);
+            assertFalse(fields.isEmpty(), "Schema của " + cat + " không được rỗng");
+            
+            // Check that at least one filterable key exists
+            boolean hasFilterable = fields.stream().anyMatch(FieldDefinition::isFilterable);
+            assertTrue(hasFilterable, "Danh mục " + cat + " phải có ít nhất 1 thuộc tính lọc được");
+        }
+
+        // Verify key fields for MONITOR
+        Map<String, FieldDefinition> monitorSchema = registry.getSchemaAsMap("MONITOR");
+        assertTrue(monitorSchema.containsKey("screen_size_inch"));
+        assertTrue(monitorSchema.containsKey("resolution"));
+        assertTrue(monitorSchema.containsKey("refresh_rate_hz"));
+        assertTrue(monitorSchema.containsKey("panel_type"));
+
+        // Verify key fields for KEYBOARD
+        Map<String, FieldDefinition> keyboardSchema = registry.getSchemaAsMap("KEYBOARD");
+        assertTrue(keyboardSchema.containsKey("connection_type"));
+        assertTrue(keyboardSchema.containsKey("switch_type"));
+        assertTrue(keyboardSchema.containsKey("layout"));
+        List<String> layoutValues = keyboardSchema.get("layout").getAllowedValues();
+        assertTrue(layoutValues.contains("75%"));
+        assertTrue(layoutValues.contains("68%"));
+        assertFalse(layoutValues.contains("Compact 75%"));
+
+        // TC-PROD-26: Verify 4 LED types for KEYBOARD
+        assertTrue(keyboardSchema.containsKey("led_type"));
+        List<String> ledValues = keyboardSchema.get("led_type").getAllowedValues();
+        assertTrue(ledValues.contains("RGB"));
+        assertTrue(ledValues.contains("Monochrome"));
+        assertTrue(ledValues.contains("Rainbow"));
+        assertTrue(ledValues.contains("None"));
+
+        // Verify key fields for MOUSE
+        Map<String, FieldDefinition> mouseSchema = registry.getSchemaAsMap("MOUSE");
+        assertTrue(mouseSchema.containsKey("connection_type"));
+        assertTrue(mouseSchema.containsKey("dpi"));
+    }
 }

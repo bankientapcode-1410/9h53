@@ -16,6 +16,20 @@ interface SpecSlideDownSelectProps {
   onClear: () => void;
 }
 
+const formatSpecDisplayLabel = (key: string, value: string, defaultLabel: string): string => {
+  if (key === 'layout') {
+    return defaultLabel.replace(/^compact\s+/i, '');
+  }
+  if (key === 'led_type') {
+    const v = value.toUpperCase();
+    if (v === 'RGB') return 'LED RGB';
+    if (v === 'MONOCHROME') return 'LED Đơn sắc';
+    if (v === 'RAINBOW') return 'LED Rainbow';
+    if (v === 'NONE') return 'Không LED';
+  }
+  return defaultLabel;
+};
+
 const getOptions = (field: FieldDefinitionDTO, facetGroup?: FacetFilterGroupDTO): SpecOption[] => {
   // 1. If BOOLEAN type:
   if (field.type === 'BOOLEAN') {
@@ -41,20 +55,28 @@ const getOptions = (field: FieldDefinitionDTO, facetGroup?: FacetFilterGroupDTO)
 
   // 2. If facetGroup has options from DB products:
   if (facetGroup?.options && facetGroup.options.length > 0) {
-    return facetGroup.options.map((opt) => ({
-      value: opt.value,
-      label: opt.label || (field.unit ? `${opt.value} ${field.unit}` : opt.value),
-      count: opt.count,
-    }));
+    return facetGroup.options.map((opt) => {
+      let rawLabel = opt.label || (field.unit ? `${opt.value} ${field.unit}` : opt.value);
+      rawLabel = formatSpecDisplayLabel(field.key, opt.value, rawLabel);
+      return {
+        value: opt.value,
+        label: rawLabel,
+        count: opt.count,
+      };
+    });
   }
 
   // 3. Fallback to schema allowedValues if any:
   if (field.allowedValues && field.allowedValues.length > 0) {
-    return field.allowedValues.map((val: string) => ({
-      value: val,
-      label: field.unit ? `${val} ${field.unit}` : val,
-      count: undefined,
-    }));
+    return field.allowedValues.map((val: string) => {
+      let rawLabel = field.unit ? `${val} ${field.unit}` : val;
+      rawLabel = formatSpecDisplayLabel(field.key, val, rawLabel);
+      return {
+        value: val,
+        label: rawLabel,
+        count: undefined,
+      };
+    });
   }
 
   return [];

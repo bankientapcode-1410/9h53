@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CompatRule, CreateCompatRuleRequest, RuleSchemaMetadata, RuleSeverity } from '../types/rule.types';
 import { VisualExpressionBuilder } from './VisualExpressionBuilder';
 import { MessageTemplateEditor } from './MessageTemplateEditor';
@@ -40,6 +40,39 @@ export const RuleFormModal: React.FC<Props> = ({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Synchronize form state strictly with the rule being operated on
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        rule_name: initialData.rule_name || '',
+        source_category: initialData.source_category || 'CPU',
+        target_category: initialData.target_category || 'MOTHERBOARD',
+        source_spec_key: initialData.source_spec_key || '',
+        target_spec_key: initialData.target_spec_key || '',
+        operator: initialData.operator || 'EQUALS',
+        severity: initialData.severity || 'ERROR',
+        error_message_template: initialData.error_message_template || '',
+        is_active: initialData.is_active ?? true,
+        priority: initialData.priority ?? 10,
+      });
+    } else {
+      setFormData({
+        rule_name: '',
+        source_category: 'CPU',
+        target_category: 'MOTHERBOARD',
+        source_spec_key: 'socket_type',
+        target_spec_key: 'supported_sockets',
+        operator: 'IN',
+        severity: 'ERROR',
+        error_message_template:
+          'CPU socket {source_value} không tương thích với Mainboard (hỗ trợ: {target_value}). Vui lòng chọn Mainboard có socket phù hợp.',
+        is_active: true,
+        priority: 10,
+      });
+    }
+    setErrorMessage(null);
+  }, [initialData, isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,11 +111,25 @@ export const RuleFormModal: React.FC<Props> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80">
           <div>
-            <h2 className="text-base font-bold text-slate-800">
-              {isEdit ? 'Chỉnh Sửa Quy Tắc Tương Thích' : 'Tạo Mới Quy Tắc Tương Thích (UC6)'}
+            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+              {isEdit ? (
+                <>
+                  <span>Chỉnh Sửa Quy Tắc:</span>
+                  <span className="text-smart-blue font-extrabold max-w-sm truncate" title={initialData?.rule_name}>
+                    {initialData?.rule_name}
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-semibold">
+                    {initialData?.rule_id?.substring(0, 8)}...
+                  </span>
+                </>
+              ) : (
+                'Tạo Mới Quy Tắc Tương Thích (UC6)'
+              )}
             </h2>
-            <p className="text-xs text-slate-500">
-              Cấu hình điều kiện đánh giá phần cứng với hỗ trợ Live Expression & Dry-Run Sandbox
+            <p className="text-xs text-slate-500 mt-0.5">
+              {isEdit
+                ? `Đang thao tác quy tắc luồng đối chiếu [${formData.source_category} → ${formData.target_category}] • Tự động đồng bộ biểu thức điều kiện`
+                : 'Cấu hình điều kiện đánh giá phần cứng với hỗ trợ Live Expression & Dry-Run Sandbox'}
             </p>
           </div>
           <button
@@ -142,7 +189,7 @@ export const RuleFormModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Row 2: Visual Expression Builder */}
+          {/* Row 2: Visual Expression Builder - Synchronized strictly with the active rule */}
           <VisualExpressionBuilder
             sourceCategory={formData.source_category}
             targetCategory={formData.target_category}

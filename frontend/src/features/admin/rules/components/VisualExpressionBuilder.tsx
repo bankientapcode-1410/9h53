@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RuleOperator, RuleSchemaMetadata } from '../types/rule.types';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, SlidersHorizontal } from 'lucide-react';
 
 interface Props {
   sourceCategory: string;
@@ -27,6 +27,9 @@ export const VisualExpressionBuilder: React.FC<Props> = ({
   metadata,
   onChange,
 }) => {
+  const [customSourceMode, setCustomSourceMode] = useState(false);
+  const [customTargetMode, setCustomTargetMode] = useState(false);
+
   const sourceSpecOptions = React.useMemo(() => {
     if (!sourceCategory) return [];
     if (sourceCategory === '_SYSTEM') {
@@ -54,15 +57,35 @@ export const VisualExpressionBuilder: React.FC<Props> = ({
         target_category: targetCategory === '_SYSTEM' ? 'PSU' : targetCategory,
       });
     } else {
-      onChange({ source_category: newCat });
+      const newSpecs = metadata.spec_keys_by_category[newCat] || [];
+      const defaultKey = newSpecs.length > 0 ? newSpecs[0].key : '';
+      onChange({
+        source_category: newCat,
+        source_spec_key: defaultKey,
+      });
     }
+  };
+
+  const handleTargetCatChange = (newCat: string) => {
+    const newSpecs = metadata.spec_keys_by_category[newCat] || [];
+    const defaultKey = newSpecs.length > 0 ? newSpecs[0].key : '';
+    onChange({
+      target_category: newCat,
+      target_spec_key: defaultKey,
+    });
   };
 
   return (
     <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 space-y-4">
-      <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
-        <Sparkles className="w-4 h-4 text-smart-blue" />
-        Trình Dựng Biểu Thức Điều Kiện (Visual Expression Builder)
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
+          <Sparkles className="w-4 h-4 text-smart-blue" />
+          Trình Dựng Biểu Thức Điều Kiện (Visual Expression Builder)
+        </div>
+        <span className="text-[11px] text-slate-400 flex items-center gap-1 font-medium">
+          <SlidersHorizontal className="w-3 h-3 text-amber-500" />
+          Đồng bộ trực tiếp với quy tắc đang thao tác
+        </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-center">
@@ -84,23 +107,48 @@ export const VisualExpressionBuilder: React.FC<Props> = ({
             ))}
           </select>
 
-          <div className="relative">
-            <input
-              type="text"
-              list="source-spec-keys-list"
-              placeholder="Nhập hoặc chọn khóa thông số (source_spec_key)..."
+          {customSourceMode ? (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                placeholder="Nhập khóa thông số nguồn (vd: socket_type)..."
+                value={sourceSpecKey}
+                onChange={(e) => onChange({ source_spec_key: e.target.value })}
+                className="w-full text-xs font-mono px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-smart-blue"
+              />
+              <button
+                type="button"
+                onClick={() => setCustomSourceMode(false)}
+                className="px-2 py-1.5 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg whitespace-nowrap font-medium transition-colors"
+                title="Quay lại danh sách gợi ý theo danh mục"
+              >
+                Gợi ý
+              </button>
+            </div>
+          ) : (
+            <select
               value={sourceSpecKey}
-              onChange={(e) => onChange({ source_spec_key: e.target.value })}
+              onChange={(e) => {
+                if (e.target.value === '__CUSTOM__') {
+                  setCustomSourceMode(true);
+                } else {
+                  onChange({ source_spec_key: e.target.value });
+                }
+              }}
               className="w-full text-xs font-mono px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-smart-blue"
-            />
-            <datalist id="source-spec-keys-list">
+            >
+              <option value="">-- Chọn Khóa Thông Số Nguồn --</option>
               {sourceSpecOptions.map((opt) => (
-                <option key={opt.key} value={opt.key}>
-                  {opt.key} - {opt.label}
+                <option key={'src-opt-' + opt.key} value={opt.key}>
+                  {opt.key} — {opt.label}
                 </option>
               ))}
-            </datalist>
-          </div>
+              {sourceSpecKey && !sourceSpecOptions.some((o) => o.key === sourceSpecKey) && (
+                <option value={sourceSpecKey}>{sourceSpecKey} (Khóa hiện tại)</option>
+              )}
+              <option value="__CUSTOM__">✏️ Tự nhập khóa khác (Custom)...</option>
+            </select>
+          )}
         </div>
 
         {/* Step 2: Operator */}
@@ -119,10 +167,10 @@ export const VisualExpressionBuilder: React.FC<Props> = ({
               </option>
             ))}
           </select>
-          <div className="text-[10px] text-slate-400">
+          <div className="text-[10px] text-slate-400 font-medium">
             {operator === 'IN' && 'Thuộc tập hợp'}
             {operator === 'NOT_IN' && 'Không thuộc tập hợp'}
-            {operator === 'EQUALS' && 'Bằng nhau'}
+            {operator === 'EQUALS' && 'Bằng nhau (=)'}
             {operator === 'LTE' && 'Nhỏ hơn hoặc bằng (<=)'}
             {operator === 'GTE' && 'Lớn hơn hoặc bằng (>=)'}
             {operator === 'RANGE' && 'Trong khoảng [min, max]'}
@@ -136,7 +184,7 @@ export const VisualExpressionBuilder: React.FC<Props> = ({
           </label>
           <select
             value={targetCategory}
-            onChange={(e) => onChange({ target_category: e.target.value })}
+            onChange={(e) => handleTargetCatChange(e.target.value)}
             className="w-full text-xs font-semibold px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-smart-blue"
           >
             <option value="">-- Chọn Danh Mục Đích --</option>
@@ -149,30 +197,56 @@ export const VisualExpressionBuilder: React.FC<Props> = ({
               ))}
           </select>
 
-          <div className="relative">
-            <input
-              type="text"
-              list="target-spec-keys-list"
-              placeholder="Nhập hoặc chọn khóa thông số (target_spec_key)..."
+          {customTargetMode ? (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                placeholder="Nhập khóa thông số đích (vd: supported_sockets)..."
+                value={targetSpecKey}
+                onChange={(e) => onChange({ target_spec_key: e.target.value })}
+                className="w-full text-xs font-mono px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-smart-blue"
+              />
+              <button
+                type="button"
+                onClick={() => setCustomTargetMode(false)}
+                className="px-2 py-1.5 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg whitespace-nowrap font-medium transition-colors"
+                title="Quay lại danh sách gợi ý theo danh mục"
+              >
+                Gợi ý
+              </button>
+            </div>
+          ) : (
+            <select
               value={targetSpecKey}
-              onChange={(e) => onChange({ target_spec_key: e.target.value })}
+              onChange={(e) => {
+                if (e.target.value === '__CUSTOM__') {
+                  setCustomTargetMode(true);
+                } else {
+                  onChange({ target_spec_key: e.target.value });
+                }
+              }}
               className="w-full text-xs font-mono px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-smart-blue"
-            />
-            <datalist id="target-spec-keys-list">
+            >
+              <option value="">-- Chọn Khóa Thông Số Đích --</option>
               {targetSpecOptions.map((opt) => (
-                <option key={opt.key} value={opt.key}>
-                  {opt.key} - {opt.label}
+                <option key={'tgt-opt-' + opt.key} value={opt.key}>
+                  {opt.key} — {opt.label}
                 </option>
               ))}
-            </datalist>
-          </div>
+              {targetSpecKey && !targetSpecOptions.some((o) => o.key === targetSpecKey) && (
+                <option value={targetSpecKey}>{targetSpecKey} (Khóa hiện tại)</option>
+              )}
+              <option value="__CUSTOM__">✏️ Tự nhập khóa khác (Custom)...</option>
+            </select>
+          )}
         </div>
       </div>
 
       {/* Live expression summary bar */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-blue-50/70 border border-blue-200/70 rounded-xl text-xs text-blue-900 font-mono">
+      <div className="flex items-center gap-2 px-3.5 py-2.5 bg-blue-50/70 border border-blue-200/70 rounded-xl text-xs text-blue-900 font-mono">
+        <span className="text-[11px] text-blue-600 font-sans font-semibold mr-1">Biểu thức đối chiếu:</span>
         <span className="font-bold text-smart-navy">{sourceCategory || '?'}.{sourceSpecKey || '?'}</span>
-        <span className="px-1.5 py-0.5 bg-amber-200 text-amber-900 font-black rounded">{operator}</span>
+        <span className="px-2 py-0.5 bg-amber-200 text-amber-900 font-black rounded">{operator}</span>
         <span className="font-bold text-emerald-800">{targetCategory || '?'}.{targetSpecKey || '?'}</span>
       </div>
     </div>

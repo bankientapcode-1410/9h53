@@ -5,9 +5,9 @@
 | Thuộc tính | Giá trị Chi tiết |
 | :--- | :--- |
 | **Mã tài liệu (Document ID)** | `DD-LOCAL-DEV-AUTOMATION` |
-| **Phiên bản (Version)** | `v1.2` (Bổ sung Cơ chế Tự động Sinh Sản phẩm Kho hàng khi Khởi động Docker & Dev Run) |
+| **Phiên bản (Version)** | `v1.3` (Bổ sung Cấu hình Khởi chạy IDE một chạm F5 / Fn+F5 Launch & Background Tasks) |
 | **Package Backend liên quan** | `com.smartpc.modules.product` & `com.smartpc` (Cross-cutting Developer Tooling, Migration & Seed) |
-| **Thư mục Script & Migrations** | `scripts/dev.ps1`, `scripts/seed-inventory.ps1`, `scripts/seed-products.sql`, `backend/src/main/resources/db/migration/V5__seed_product_inventory.sql`, `dev.cmd` |
+| **Thư mục Script & Migrations** | `scripts/dev.ps1`, `scripts/seed-inventory.ps1`, `scripts/seed-products.sql`, `backend/src/main/resources/db/migration/V5__seed_product_inventory.sql`, `dev.cmd`, `.vscode/launch.json`, `.vscode/tasks.json` |
 | **Use-Case liên quan** | Cross-cutting Local Development, Demo, Infrastructure Bootstrap, UC1a (Catalog), UC2 (PC Builder), UC4 (Kho hàng & Giỏ hàng), UC5 (Specs) |
 | **Mã phân rã WBS** | `7.0` (Developer Experience, Localhost Demo & Runtime Orchestration) & `7.2.2` (Kho hàng & Sản phẩm mẫu) |
 | **Nền tảng mục tiêu** | Windows PowerShell 5.1+ / PowerShell 7+, Docker Compose, Node.js 20+, Java 25 LTS, MySQL 8.0 |
@@ -33,6 +33,10 @@ Phân hệ **Local Dev Automation & Product Inventory Seeding** giải quyết t
 ### 2.2. Cấu trúc File Layout
 ```text
 project1/
+├── .vscode/
+│   ├── launch.json                                         # Cấu hình F5 / Fn+F5 Debug & Launch Chrome/Edge
+│   ├── tasks.json                                          # Background tasks tự động chạy Vite dev server & dev.cmd
+│   └── settings.json                                       # Cài đặt trình biên dịch Java & môi trường
 ├── dev.cmd                                                # Batch wrapper tại thư mục gốc (cho phép gõ .\dev.cmd hoặc double-click)
 ├── scripts/
 │   ├── dev.ps1                                            # Kịch bản PowerShell điều phối chính (hỗ trợ Mode seed)
@@ -240,6 +244,26 @@ param(
   3. Nếu không có `-GenerateRandom`: Thực thi file `scripts/seed-products.sql` chứa 24 linh kiện chuẩn.
   4. Nếu có `-GenerateRandom`: Sinh thêm $N$ sản phẩm ngẫu nhiên với tên thương hiệu, dải giá và tồn kho đa dạng.
 
+### 6.3. Cấu hình Khởi chạy IDE một chạm (F5 / Fn+F5 Launch Configurations & Background Tasks)
+
+Nhằm tối ưu hóa trải nghiệm nhà phát triển (Developer Experience - DX) trên IDE (VS Code / Antigravity), dự án cung cấp cấu hình chuẩn hóa tại `.vscode/`:
+
+#### 6.3.1. Đặc tả Tasks (`.vscode/tasks.json`)
+* **Task `npm: dev (frontend)`:** Khởi chạy Vite Dev Server tại cổng `3000` dưới dạng background task (`isBackground: true`).
+  * `command`: `npm --prefix frontend run dev`
+  * `problemMatcher.background`: Nhận diện chuỗi ready của Vite (`beginsPattern: ".*VITE.*ready in.*"`, `endsPattern: ".*Local:\\s+http://localhost:.*"`).
+* **Task `SmartPC: Start Full Stack`:** Chạy lệnh wrapper `.\dev.cmd full`.
+* **Task `SmartPC: Start Backend`:** Chạy Maven Spring Boot backend `.\mvnw.cmd spring-boot:run`.
+
+#### 6.3.2. Đặc tả Launch Configuration (`.vscode/launch.json`)
+* Cấu hình mặc định khi nhấn `F5` / `Fn+F5`: **"SmartPC: Khởi chạy Frontend (Chrome)"** và **"SmartPC: Khởi chạy Frontend (Edge)"**.
+  * `type`: `"chrome"` / `"msedge"`
+  * `request`: `"launch"`
+  * `url`: `"http://localhost:3000"`
+  * `webRoot`: `"${workspaceFolder}/frontend/src"`
+  * `preLaunchTask`: `"npm: dev (frontend)"`
+  * **Cơ chế hoạt động:** Khi nhấn F5, IDE kích hoạt `preLaunchTask` để bật server Vite (nếu chưa chạy), đợi server sẵn sàng tại cổng 3000, sau đó tự động khởi chạy trình duyệt trỏ đến `http://localhost:3000` và gắn debugger JavaScript.
+
 ---
 
 ## 7. Thiết kế Cơ sở Dữ liệu & DDL Seed Data (Database Design & Flyway V5)
@@ -296,3 +320,5 @@ INSERT IGNORE INTO products (
 | `DEV-TC-08` | Idempotent khi chạy `seed` nhiều lần | Chạy `.\dev.cmd seed` 2 lần liên tiếp | Không phát sinh lỗi Primary Key Duplicate, số lượng bản ghi giữ nguyên, mã thoát `0`. |
 | `DEV-TC-09` | Reset và tái tạo kho hàng | `.\scripts\seed-inventory.ps1 -Reset` | Xóa sạch bảng products cũ và nạp lại chính xác 24 linh kiện mẫu, tất cả ràng buộc ngoại khóa đều nguyên vẹn. |
 | `DEV-TC-10` | Hiển thị sản phẩm kho hàng trên Storefront UI | Mở `http://localhost:3000/products` sau khi khởi động | Giao diện hiển thị các card sản phẩm thực tế từ cơ sở dữ liệu thay vì mock rỗng. |
+| `DEV-TC-11` | Nhấn F5 / Fn+F5 khởi chạy Frontend tự động | Nhấn F5 trong IDE | IDE tự khởi động background task `npm: dev (frontend)`, nhận diện port 3000 sẵn sàng, và mở trình duyệt tại `http://localhost:3000`. |
+| `DEV-TC-12` | Hỗ trợ cả Chrome và Edge khi Launch F5 | Chọn cấu hình Edge hoặc Chrome | Trình duyệt tương ứng khởi động không lỗi và mở đúng Storefront. |
