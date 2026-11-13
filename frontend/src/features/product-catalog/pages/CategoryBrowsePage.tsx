@@ -9,6 +9,7 @@ import {
   ProductSummaryDTO,
   FacetFilterGroupDTO,
   SpecMetadataDTO,
+  DEFAULT_PRICE_OPTIONS,
 } from '../types/product.types';
 
 import { CategoryHierarchyNav } from '../components/CategoryHierarchyNav';
@@ -88,11 +89,7 @@ export const CategoryBrowsePage: React.FC = () => {
             code: 'price_ranges',
             label: 'Khoảng giá',
             filter_type: 'CHIP',
-            options: [
-              { label: 'Dưới 5 triệu', value: '0-5000000', count: 0 },
-              { label: '5 - 15 triệu', value: '5000000-15000000', count: 0 },
-              { label: 'Trên 15 triệu', value: '15000000-999999999', count: 0 },
-            ],
+            options: DEFAULT_PRICE_OPTIONS,
           },
         ]);
         setSpecMetadata(null);

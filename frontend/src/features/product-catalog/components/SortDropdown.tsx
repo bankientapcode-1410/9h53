@@ -1,7 +1,7 @@
 import React from 'react';
-import { ArrowUpDown, Flame, TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
+import { ArrowUpDown, Clock, TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
 
-export type SortValue = 'newest' | 'price_asc' | 'price_desc' | 'benchmark_desc';
+export type SortValue = 'newest' | 'oldest' | 'price_asc' | 'price_desc';
 
 interface SortDropdownProps {
   value: SortValue;
@@ -11,9 +11,9 @@ interface SortDropdownProps {
 export const SortDropdown: React.FC<SortDropdownProps> = ({ value, onChange }) => {
   const options: { value: SortValue; label: string; icon: React.ReactNode }[] = [
     { value: 'newest', label: 'Mới nhất', icon: <Sparkles className="w-3.5 h-3.5 text-blue-500" /> },
+    { value: 'oldest', label: 'Cũ nhất', icon: <Clock className="w-3.5 h-3.5 text-slate-500" /> },
     { value: 'price_asc', label: 'Giá: Thấp đến Cao', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
     { value: 'price_desc', label: 'Giá: Cao đến Thấp', icon: <TrendingDown className="w-3.5 h-3.5 text-amber-500" /> },
-    { value: 'benchmark_desc', label: 'Hiệu năng cao nhất', icon: <Flame className="w-3.5 h-3.5 text-smart-red" /> },
   ];
 
   return (

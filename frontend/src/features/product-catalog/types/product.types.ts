@@ -30,6 +30,70 @@ export interface FacetOptionDTO {
   count: number;
 }
 
+export interface PriceRangePreset {
+  label: string;
+  value: string;
+  min: number;
+  max: number;
+}
+
+export const PRICE_RANGE_PRESETS: PriceRangePreset[] = [
+  { label: 'Dưới 2 triệu', value: '0-2000000', min: 0, max: 2000000 },
+  { label: '2 - 5 triệu', value: '2000000-5000000', min: 2000000, max: 5000000 },
+  { label: '5 - 10 triệu', value: '5000000-10000000', min: 5000000, max: 10000000 },
+  { label: '10 - 15 triệu', value: '10000000-15000000', min: 10000000, max: 15000000 },
+  { label: '15 - 25 triệu', value: '15000000-25000000', min: 15000000, max: 25000000 },
+  { label: 'Trên 25 triệu', value: '25000000-999999999', min: 25000000, max: 999999999 },
+];
+
+export const DEFAULT_PRICE_OPTIONS: FacetOptionDTO[] = PRICE_RANGE_PRESETS.map(
+  ({ label, value }) => ({ label, value, count: 0 })
+);
+
+const UNBOUNDED_MAX_PRICE = 999999999;
+
+export function buildDynamicPriceOptions(prices: number[]): FacetOptionDTO[] {
+  const nonEmpty = PRICE_RANGE_PRESETS.map((preset) => {
+    const count = prices.filter(
+      (p) =>
+        (preset.min === 0 || p >= preset.min) &&
+        (preset.max >= UNBOUNDED_MAX_PRICE || p <= preset.max)
+    ).length;
+    return { ...preset, count };
+  }).filter((bucket) => bucket.count > 0);
+
+  if (nonEmpty.length === 0) {
+    return [];
+  }
+
+  const first = nonEmpty[0];
+  if (first.min > 0 && first.max < UNBOUNDED_MAX_PRICE) {
+    const maxMillions = first.max / 1000000;
+    nonEmpty[0] = {
+      ...first,
+      min: 0,
+      label: `Dưới ${maxMillions} triệu`,
+      value: `0-${first.max}`,
+    };
+  }
+
+  if (nonEmpty.length >= 2) {
+    const lastIdx = nonEmpty.length - 1;
+    const last = nonEmpty[lastIdx];
+    if (last.max < UNBOUNDED_MAX_PRICE && last.min > 0) {
+      const minMillions = last.min / 1000000;
+      nonEmpty[lastIdx] = {
+        ...last,
+        max: UNBOUNDED_MAX_PRICE,
+        label: `Trên ${minMillions} triệu`,
+        value: `${last.min}-${UNBOUNDED_MAX_PRICE}`,
+      };
+    }
+  }
+
+  return nonEmpty.map(({ label, value, count }) => ({ label, value, count }));
+}
+
 export interface FacetFilterGroupDTO {
   code?: string;
   label?: string;
@@ -135,7 +199,7 @@ export interface ProductFilterCriteria {
   min_price?: number;
   max_price?: number;
   specs?: Record<string, string>;
-  sort?: 'newest' | 'price_asc' | 'price_desc' | 'benchmark_desc';
+  sort?: 'newest' | 'oldest' | 'price_asc' | 'price_desc';
   page?: number;
   size?: number;
   search?: string;

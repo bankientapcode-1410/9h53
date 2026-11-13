@@ -190,7 +190,7 @@ export function useProductFilter() {
   );
 
   const setSort = useCallback(
-    (sort: 'newest' | 'price_asc' | 'price_desc' | 'benchmark_desc') => {
+    (sort: 'newest' | 'oldest' | 'price_asc' | 'price_desc') => {
       updateParams({ sort: sort === 'newest' ? null : sort }, false);
     },
     [updateParams]

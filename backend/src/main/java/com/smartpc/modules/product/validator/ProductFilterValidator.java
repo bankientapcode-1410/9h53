@@ -17,9 +17,9 @@ public class ProductFilterValidator {
 
     private static final Set<String> ALLOWED_SORTS = Set.of(
             "newest",
+            "oldest",
             "price_asc",
-            "price_desc",
-            "benchmark_desc"
+            "price_desc"
     );
 
     private final CategorySpecSchemaRegistry schemaRegistry;

@@ -892,20 +892,20 @@ Bám sát mockup `docs/screens/screen1.png` và `docs/screens/screen3.png`:
      * **Bỏ phần mô tả văn bản:** Tuyệt đối không hiển thị dòng mô tả tĩnh `| Cùng nhóm: OR • Khác nhóm: AND` trên thanh tiêu đề để giao diện tối giản, hiện đại và sạch sẽ.
      * **Box 1 — Thương hiệu phổ biến (Brand Box):**
        * Tiêu đề: Icon `Tag` + `Thương hiệu phổ biến` (kèm badge số lượng đang chọn nếu có, ví dụ `2 đã chọn`).
-       * Nút `Tất cả` (active `bg-slate-900 text-white` khi `activeBrands.length === 0`) và danh sách chip thương hiệu sinh động từ `GET /api/v1/products/facets`.
+       * Nút `Tất cả` (active `bg-slate-900 text-white` khi `activeBrands.length === 0`) và danh sách chip thương hiệu sinh động từ `GET /api/v1/products/facets` (chỉ hiển thị tên thương hiệu, không hiển thị số lượng đếm cạnh tên).
        * Hỗ trợ chọn nhiều thương hiệu cùng lúc (Multi-select), mỗi chip active có icon `Check` và nền xanh `bg-smart-blue text-white`.
        * Khi đang chọn một hoặc nhiều thương hiệu và bấm nút `Tất cả`, hệ thống gọi trực tiếp `onClearBrands()` (xóa nguyên tử tham số `brand` khỏi URL trong 1 lần cập nhật state, tuyệt đối không gọi `forEach(onToggleBrand)` gây lỗi stale closure chỉ xóa brand cuối cùng), toàn bộ các brand cụ thể được bỏ chọn và nút `Tất cả` sáng màu trở lại.
      * **Box 2 — Khoảng giá (Price Range Box):**
        * Tiêu đề: Icon `Coins` + `Khoảng giá` (kèm hiển thị trạng thái đang lọc giá nếu có).
-       * Nút `Tất cả mức giá` (active khi không lọc giá) và các chip khoảng giá chuẩn: `Dưới 5 triệu` (chỉ đặt `max_price=5000000`), `5 - 15 triệu` (`min_price=5000000&max_price=15000000`), `Trên 15 triệu` (chỉ đặt `min_price=15000000`)...
+       * Nút `Tất cả mức giá` (active khi không lọc giá) và các chip khoảng giá chuẩn: `Dưới 2 triệu` (chỉ đặt `max_price=2000000`), `2 - 5 triệu` (`min_price=2000000&max_price=5000000`), `5 - 10 triệu` (`min_price=5000000&max_price=10000000`), `10 - 15 triệu` (`min_price=10000000&max_price=15000000`), `15 - 25 triệu` (`min_price=15000000&max_price=25000000`), `Trên 25 triệu` (chỉ đặt `min_price=25000000`), chỉ hiển thị nhãn khoảng giá và không hiển thị số lượng đếm cạnh nhãn.
        * Click để chọn một khoảng giá, click lại chip đang active để hủy chọn (toggle về Tất cả).
      * **Loại bỏ Nhóm Chips Thông số Mở rộng (Spec Chips) ở dưới 2 box nhanh:** Loại bỏ hoàn toàn khối các dòng chip thông số mở rộng tự sinh bên dưới 2 box Thương hiệu và Khoảng giá (trước đây tự sinh ra ~3 dòng khi chọn danh mục như CPU: Socket, Số nhân...). Việc này loại bỏ bộ lọc thừa, không hoạt động tốt, giữ thanh QuickChipsFilterBar luôn tinh gọn tối đa với đúng 2 box cốt lõi (Thương hiệu & Khoảng giá). Mọi nhu cầu lọc chi tiết theo thuộc tính kỹ thuật chuyên sâu được phụ trách tập trung bởi DynamicSpecsFilterPanel (Bộ lọc chi tiết) hoặc công cụ Tìm kiếm AI.
      * **Nút Xóa bộ lọc (`RotateCcw`):** Tích hợp ở góc trên bên phải thanh Quick Chips khi có bất kỳ tiêu chí lọc nào đang kích hoạt (`activeBrands > 0` hoặc có dải giá hoặc specs).
    * **Tối ưu Rút gọn URL & REST API Query String (`useProductFilter.ts` & `productService.ts`):**
      * Loại bỏ hoàn toàn các tham số mặc định hoặc dư thừa trên cả thanh địa chỉ trình duyệt và khi gọi `GET /api/v1/products`:
        * Không gửi `page` khi `page = 0`; không gửi `size` khi `size = 12`; không gửi `sort` khi `sort = 'newest'`.
-       * Không gửi `min_price` khi `min_price <= 0` hoặc `undefined` (VD: chọn *"Dưới 5 triệu"* chỉ truyền `?max_price=5000000`).
-       * Không gửi `max_price` khi `max_price >= 999999999` / không giới hạn cận trên (VD: chọn *"Trên 15 triệu"* chỉ truyền `?min_price=15000000`).
+       * Không gửi `min_price` khi `min_price <= 0` hoặc `undefined` (VD: chọn *"Dưới 2 triệu"* chỉ truyền `?max_price=2000000`).
+       * Không gửi `max_price` khi `max_price >= 999999999` / không giới hạn cận trên (VD: chọn *"Trên 25 triệu"* chỉ truyền `?min_price=25000000`).
        * Khi bấm `Tất cả` ở hộp Thương hiệu, xóa hẳn tham số `brand` khỏi URL/API.
    * **Nguyên tắc Logic Lọc Dữ liệu (Filtering Logic):**
      * **Cùng nhóm (Intra-group): Phép toán OR.** Khi chọn nhiều giá trị trong cùng một nhóm (ví dụ chọn nhiều thương hiệu ASUS, MSI), hệ thống truy vấn các sản phẩm thỏa mãn `brand = 'ASUS' OR brand = 'MSI'` (tương đương `brand IN ('ASUS', 'MSI')`).
@@ -922,7 +922,7 @@ Bám sát mockup `docs/screens/screen1.png` và `docs/screens/screen3.png`:
      * Menu trượt xuống (Slide Down Menu) nổi bật (bsolute z-30 shadow-lg), hỗ trợ nhấp để chọn giá trị, tùy chọn đầu tiên là Tất cả <Tên thông số> để hủy lọc.
      * Tự động đóng menu khi nhấp chuột ra ngoài (click-outside).
 
-2. **Toolbar & Sắp xếp:** Tổng số sản phẩm (VD: *"Tìm thấy 48 card đồ họa"*); Dropdown: `newest` (Mới nhất), `price_asc`, `price_desc`, `benchmark_desc` (Hiệu năng cao nhất).
+2. **Toolbar & Sắp xếp:** Tổng số sản phẩm (VD: *"Tìm thấy 48 card đồ họa"*); Dropdown: `newest` (Mới nhất), `oldest` (Cũ nhất), `price_asc`, `price_desc`.
 3. **Lưới 4 cột (`ProductGrid.tsx` & `ProductCard.tsx`):** Ảnh 1:1, tên sản phẩm cố định chiều cao 2 dòng (`block line-clamp-2 min-h-[2.5rem]`) để các dãy tag `key_specs` trên cùng hàng luôn thẳng hàng ngang, các tag `key_specs` (trích tối đa 4 trường theo thứ tự ưu tiên `filterable` rồi tới các trường trong `CategorySpecSchemaRegistry`), giá, nhãn `HẾT HÀNG` khi `in_stock = false`.
    * **Quy chuẩn hiển thị & căn chỉnh `key_specs` trên `ProductCard.tsx`:**
      * Container dùng `flex flex-wrap items-center content-start gap-1.5 mt-2` (tránh `align-items: stretch` / `align-content: stretch` làm giãn chiều cao hộp tag hoặc gây lệch vị trí cao-thấp giữa các thẻ).
@@ -943,7 +943,10 @@ Bám sát mockup `docs/screens/screen1.png` và `docs/screens/screen3.png`:
 #### B. Facets (`ProductService.getFilterFacets`)
 * `brand`: `SELECT brand, COUNT(*) ... GROUP BY brand` trong danh mục (is_active, chưa xóa).
 * Spec filterable có virtual column: `GROUP BY v_<key>`; spec filterable không có virtual column: tính trên tập kết quả của danh mục (đủ nhỏ) bằng Java.
-* Dải giá: `MIN(price)`, `MAX(price)` + các mốc chip cố định cấu hình theo danh mục.
+* Dải giá (`price`): `MIN(price)`, `MAX(price)` và danh sách `options` sinh động từ 6 mốc chuẩn (`0-2M`, `2-5M`, `5-10M`, `10-15M`, `15-25M`, `25M+`) theo quy tắc:
+  1. Đếm số sản phẩm khớp từng mốc (`(min == 0 || price >= min) && (max >= 999999999 || price <= max)`); ẩn hoàn toàn mọi mốc có `count == 0`.
+  2. Nếu mốc đầu tiên còn lại có `min > 0` và `max < 999999999` (không có sản phẩm ở mốc thấp hơn), đổi nhãn thành `Dưới <max/1M> triệu` (`0-<max>`).
+  3. Nếu có từ 2 mốc trở lên và mốc cuối cùng còn lại có `max < 999999999` và `min > 0` (không có sản phẩm ở mốc cao hơn), đổi nhãn thành `Trên <min/1M> triệu` (`<min>-999999999`).
 * Cache Redis theo `facets::<categoryCode>` TTL 10 phút, bị evict cùng `listCache.evictAll()`.
 
 ---
@@ -977,7 +980,7 @@ Bám sát mockup `docs/screens/screen1.png` và `docs/screens/screen3.png`:
 | F2 | Mỗi key trong `specs[...]` phải thuộc `schemaRegistry.getFilterableKeys(category)` | `PROD_INVALID_FILTER` |
 | F3 | Giá trị spec ép kiểu theo `FieldDefinition.type` (VD: `vram_gb=abc` $\rightarrow$ lỗi); hỗ trợ nhiều giá trị phân tách dấu phẩy (OR) | `PROD_INVALID_FILTER` |
 | F4 | `0 \le min\_price \le max\_price` | `PROD_INVALID_FILTER` |
-| F5 | `sort` $\in$ {`newest`, `price_asc`, `price_desc`, `benchmark_desc`}; mặc định `newest` | `PROD_INVALID_FILTER` |
+| F5 | `sort` $\in$ {`newest`, `oldest`, `price_asc`, `price_desc`}; mặc định `newest` | `PROD_INVALID_FILTER` |
 | F6 | `size` $\in [1, 48]$, `page \ge 0`, `brand` tối đa 10 giá trị | `PROD_INVALID_FILTER` |
 
 #### B. `ProductSpecifications` — ánh xạ key $\rightarrow$ cột
@@ -1028,7 +1031,7 @@ Mọi lỗi dùng cấu trúc `ApiResponse` lỗi chuẩn (`success=false`, `sta
   * `brand=ASUS,MSI` (OR, tối đa 10)
   * `min_price=5000000`, `max_price=15000000`
   * `specs[vram_gb]=8,12` (chỉ key `filterable`; frontend URL-encode thành `specs%5Bvram_gb%5D=8%2C12`)
-  * `sort=price_asc` (`newest` | `price_asc` | `price_desc` | `benchmark_desc`)
+  * `sort=price_asc` (`newest` | `oldest` | `price_asc` | `price_desc`)
   * `page=0&size=12` (`size` $\le 48$)
 * **Response Body (`200 OK`):**
 ```json
@@ -1393,11 +1396,12 @@ Thư mục test: `backend/src/test/java/com/smartpc/modules/product/`. Integrati
 | **`TC-PROD-20`** | Integration | Trừ kho nguyên tử | 2 luồng đồng thời `decreaseStock(id, 1)` khi tồn = 1 | Đúng 1 luồng thành công, luồng còn lại `PROD_OUT_OF_STOCK`; tồn kho cuối = 0 |
 | **`TC-PROD-21`** | Integration | Soft delete | `DELETE /admin/products/{id}` với SP đã có trong `order_details` | `204`; `deleted_at` có giá trị; embedding & `cart_items` bị xóa; `GET /products/{id}` $\rightarrow$ `404` |
 | **`TC-PROD-22`** | Integration | Cache danh sách bị vô hiệu khi sửa SP | Gọi `GET /products?category=GPU` (cache), sửa giá 1 SP, gọi lại | Lần 2 trả giá mới (namespace `prodlist:ns` đã tăng) |
-| **`TC-PROD-23`** | Frontend / Unit | Bộ lọc Quick Chips 2 box, nút `Tất cả` & Rút gọn Query API | Render `QuickChipsFilterBar` với facets Brand & Price; chọn đồng thời 2 brands ASUS, MSI rồi bấm `Tất cả`; chọn dải giá "Dưới 5 triệu" / "Trên 15 triệu" | Hiển thị 2 box riêng biệt cùng 1 hàng; khi bấm `Tất cả` xóa sạch toàn bộ brand đã chọn (`activeBrands = []`) và tô màu nút `Tất cả`; URL & API rút gọn không chứa tham số mặc định (`page=0`, `size=12`, `sort=newest`, `min_price=0`, `max_price=999999999`) |
+| **`TC-PROD-23`** | Frontend / Unit | Bộ lọc Quick Chips 2 box, nút `Tất cả` & Rút gọn Query API | Render `QuickChipsFilterBar` với facets Brand & Price; chọn đồng thời 2 brands ASUS, MSI rồi bấm `Tất cả`; chọn dải giá "Dưới 2 triệu" / "15 - 25 triệu" / "Trên 25 triệu" | Hiển thị 2 box riêng biệt cùng 1 hàng; khi bấm `Tất cả` xóa sạch toàn bộ brand đã chọn (`activeBrands = []`) và tô màu nút `Tất cả`; URL & API rút gọn không chứa tham số mặc định (`page=0`, `size=12`, `sort=newest`, `min_price=0`, `max_price=999999999`) |
 | **`TC-PROD-25`** | Unit | Xác thực specs thiết bị ngoại vi & chuẩn hóa Layout | Kiểm tra schema `MONITOR`, `KEYBOARD`, `MOUSE`; `layout` tự chuẩn hóa từ `Compact 75%` về `75%` | Hợp lệ; ngoại lệ khi thiếu trường bắt buộc |
 | **`TC-PROD-26`** | Unit | Schema & Xác thực 4 loại Đèn LED Bàn phím cơ (`led_type`) | Đăng ký `RGB`, `Monochrome`, `Rainbow`, `None` trong `CategorySpecSchemaRegistry`; kiểm tra validate với từng loại LED | Vượt qua xác thực; giá trị không hợp lệ (VD: `Discolight`) ném `PROD_INVALID_SPECS` |
 | **`TC-PROD-27`** | Integration | Facets Đèn LED trả về đầy đủ 4 nhóm lựa chọn cho KEYBOARD | Gọi `GET /api/v1/products/facets?category=KEYBOARD` | Facet group `led_type` trả về đủ 4 options (`RGB`, `Monochrome`, `Rainbow`, `None`) với count tương ứng |
 | **`TC-PROD-24`** | Frontend / Unit | Thanh phân trang nâng cao (Trang đầu/cuối & Điền trang trực tiếp) | Test điều hướng `AdminProductListPage`: bấm `Trang đầu`, `Trang cuối`; nhập trang hợp lệ `p`, nhập trang âm $< 1$, nhập trang vượt quá `totalPages` | Nút `Trang đầu`/`Trang trước` disabled tại trang 1; `Trang cuối`/`Trang sau` disabled tại trang cuối; nhập số hợp lệ chuyển đến đúng trang; nhập ngoài biên được chặn và đưa về cận $1$ hoặc $totalPages$ an toàn |
+| **`TC-PROD-28`** | Unit | Sinh dải giá động ẩn mốc rỗng & gộp mốc min/max (`ProductService.buildDynamicPriceOptions`) | Tập SP chỉ có giá trong `2-5M` (4 SP) và `5-10M` (2 SP); hoặc chỉ có `2-5M` (1 SP) và `15-25M` (2 SP) | Các mốc `0` SP bị ẩn; mốc đầu `2-5M` đổi thành `Dưới 5 triệu` (`0-5000000`); nếu mốc cuối là `5-10M` thì đổi thành `Trên 5 triệu` (`5000000-999999999`) |
 
 ---
 

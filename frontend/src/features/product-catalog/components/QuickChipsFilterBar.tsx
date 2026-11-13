@@ -1,6 +1,6 @@
 import React from 'react';
 import { RotateCcw, Check, Tag, Coins, SlidersHorizontal } from 'lucide-react';
-import { FacetFilterGroupDTO } from '../types/product.types';
+import { DEFAULT_PRICE_OPTIONS, FacetFilterGroupDTO } from '../types/product.types';
 
 interface QuickChipsFilterBarProps {
   facets: FacetFilterGroupDTO[];
@@ -13,12 +13,6 @@ interface QuickChipsFilterBarProps {
   onSetPriceRange: (min?: number, max?: number) => void;
   onResetFilters: () => void;
 }
-
-const DEFAULT_PRICE_OPTIONS = [
-  { label: 'Dưới 5 triệu', value: '0-5000000', count: 0 },
-  { label: '5 - 15 triệu', value: '5000000-15000000', count: 0 },
-  { label: 'Trên 15 triệu', value: '15000000-999999999', count: 0 },
-];
 
 export const QuickChipsFilterBar: React.FC<QuickChipsFilterBarProps> = ({
   facets,
@@ -130,17 +124,6 @@ export const QuickChipsFilterBar: React.FC<QuickChipsFilterBarProps> = ({
                 >
                   {isSelected && <Check className="w-3 h-3 stroke-[2.5]" />}
                   <span>{opt.label}</span>
-                  {opt.count > 0 && (
-                    <span
-                      className={`text-[10px] ml-0.5 px-1 py-0.2 rounded-full ${
-                        isSelected
-                          ? 'bg-blue-700 text-blue-100'
-                          : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      {opt.count}
-                    </span>
-                  )}
                 </button>
               );
             })}
@@ -206,17 +189,6 @@ export const QuickChipsFilterBar: React.FC<QuickChipsFilterBarProps> = ({
                 >
                   {isSelected && <Check className="w-3 h-3 stroke-[2.5]" />}
                   <span>{opt.label}</span>
-                  {opt.count > 0 && (
-                    <span
-                      className={`text-[10px] ml-0.5 px-1 py-0.2 rounded-full ${
-                        isSelected
-                          ? 'bg-blue-700 text-blue-100'
-                          : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      {opt.count}
-                    </span>
-                  )}
                 </button>
               );
             })}

@@ -148,6 +148,7 @@ public class ProductService {
         facetGroups.add(FacetFilterGroupDTO.builder()
                 .groupKey("price")
                 .groupLabel("Khoảng giá")
+                .options(buildDynamicPriceOptions(products))
                 .minPrice(minPrice)
                 .maxPrice(maxPrice)
                 .build());
@@ -203,15 +204,90 @@ public class ProductService {
         return facetGroups;
     }
 
+    private record PriceBucket(int min, int max, String label, String value, long count) {
+    }
+
+    private static final int UNBOUNDED_MAX_PRICE = 999_999_999;
+
+    private static final List<PriceBucket> BASE_PRICE_BUCKETS = List.of(
+            new PriceBucket(0, 2_000_000, "Dưới 2 triệu", "0-2000000", 0),
+            new PriceBucket(2_000_000, 5_000_000, "2 - 5 triệu", "2000000-5000000", 0),
+            new PriceBucket(5_000_000, 10_000_000, "5 - 10 triệu", "5000000-10000000", 0),
+            new PriceBucket(10_000_000, 15_000_000, "10 - 15 triệu", "10000000-15000000", 0),
+            new PriceBucket(15_000_000, 25_000_000, "15 - 25 triệu", "15000000-25000000", 0),
+            new PriceBucket(25_000_000, UNBOUNDED_MAX_PRICE, "Trên 25 triệu", "25000000-999999999", 0)
+    );
+
+    /**
+     * Build non-empty price range options and promote the outer bounds when lower/upper buckets are empty.
+     */
+    public static List<FacetOptionDTO> buildDynamicPriceOptions(List<Product> products) {
+        if (products == null || products.isEmpty()) {
+            return List.of();
+        }
+
+        List<PriceBucket> nonEmpty = new ArrayList<>();
+        for (PriceBucket bucket : BASE_PRICE_BUCKETS) {
+            long count = products.stream()
+                    .map(Product::getPrice)
+                    .filter(p -> p != null
+                            && (bucket.min() == 0 || p >= bucket.min())
+                            && (bucket.max() >= UNBOUNDED_MAX_PRICE || p <= bucket.max()))
+                    .count();
+            if (count > 0) {
+                nonEmpty.add(new PriceBucket(bucket.min(), bucket.max(), bucket.label(), bucket.value(), count));
+            }
+        }
+
+        if (nonEmpty.isEmpty()) {
+            return List.of();
+        }
+
+        PriceBucket first = nonEmpty.get(0);
+        if (first.min() > 0 && first.max() < UNBOUNDED_MAX_PRICE) {
+            int maxMillions = first.max() / 1_000_000;
+            nonEmpty.set(0, new PriceBucket(
+                    0,
+                    first.max(),
+                    "Dưới " + maxMillions + " triệu",
+                    "0-" + first.max(),
+                    first.count()
+            ));
+        }
+
+        if (nonEmpty.size() >= 2) {
+            int lastIdx = nonEmpty.size() - 1;
+            PriceBucket last = nonEmpty.get(lastIdx);
+            if (last.max() < UNBOUNDED_MAX_PRICE && last.min() > 0) {
+                int minMillions = last.min() / 1_000_000;
+                nonEmpty.set(lastIdx, new PriceBucket(
+                        last.min(),
+                        UNBOUNDED_MAX_PRICE,
+                        "Trên " + minMillions + " triệu",
+                        last.min() + "-" + UNBOUNDED_MAX_PRICE,
+                        last.count()
+                ));
+            }
+        }
+
+        return nonEmpty.stream()
+                .map(b -> FacetOptionDTO.builder()
+                        .value(b.value())
+                        .label(b.label())
+                        .count(b.count())
+                        .build())
+                .toList();
+    }
+
     private Sort buildSort(String sortParam) {
         if (sortParam == null || sortParam.isBlank()) {
             return Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("productId"));
         }
 
         return switch (sortParam.trim().toLowerCase()) {
+            case "oldest" -> Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("productId"));
             case "price_asc" -> Sort.by(Sort.Order.asc("price"), Sort.Order.asc("productId"));
             case "price_desc" -> Sort.by(Sort.Order.desc("price"), Sort.Order.asc("productId"));
-            case "benchmark_desc" -> Sort.by(Sort.Order.desc("benchmarkScore"), Sort.Order.asc("productId"));
             default -> Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("productId"));
         };
     }

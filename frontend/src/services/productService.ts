@@ -7,6 +7,7 @@ import {
   ProductDetailDTO,
   FacetFilterGroupDTO,
   AdminProductDTO,
+  buildDynamicPriceOptions,
 } from '../features/product-catalog/types/product.types';
 import { MOCK_PRODUCTS } from './mockData';
 
@@ -117,8 +118,8 @@ export const productService = {
         items.sort((a, b) => a.price - b.price);
       } else if (criteria.sort === 'price_desc') {
         items.sort((a, b) => b.price - a.price);
-      } else if (criteria.sort === 'benchmark_desc') {
-        items.sort((a, b) => b.benchmark_score - a.benchmark_score);
+      } else if (criteria.sort === 'oldest') {
+        items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       } else if (!criteria.search) {
         // Chỉ sắp xếp theo mới nhất khi người dùng duyệt bình thường, không tìm kiếm.
         // Khi tìm kiếm (criteria.search), giữ nguyên thứ tự điểm liên quan (relevance ranking) đã tính!
@@ -336,20 +337,52 @@ export const productService = {
           })),
         });
       } else if (categoryCode === 'MONITOR') {
+        const sizeCounts: Record<string, number> = {};
         const resCounts: Record<string, number> = {};
+        const hzCounts: Record<string, number> = {};
         const panelCounts: Record<string, number> = {};
         catProducts.forEach((p) => {
+          const sz = p.specs.screen_size_inch;
+          if (sz !== undefined && sz !== null) {
+            const key = String(sz);
+            sizeCounts[key] = (sizeCounts[key] || 0) + 1;
+          }
           const r = p.specs.resolution;
           if (r) resCounts[r] = (resCounts[r] || 0) + 1;
+          const hz = p.specs.refresh_rate_hz;
+          if (hz !== undefined && hz !== null) {
+            const key = String(hz);
+            hzCounts[key] = (hzCounts[key] || 0) + 1;
+          }
           const panel = p.specs.panel_type;
           if (panel) panelCounts[panel] = (panelCounts[panel] || 0) + 1;
         });
+        if (Object.keys(sizeCounts).length > 0) {
+          facets.push({
+            code: 'screen_size_inch',
+            label: 'Kích thước màn hình',
+            filter_type: 'CHIP',
+            options: Object.entries(sizeCounts)
+              .sort(([a], [b]) => Number(a) - Number(b))
+              .map(([k, count]) => ({ label: `${k} inch`, value: k, count })),
+          });
+        }
         if (Object.keys(resCounts).length > 0) {
           facets.push({
             code: 'resolution',
             label: 'Độ phân giải',
             filter_type: 'CHIP',
             options: Object.entries(resCounts).map(([k, count]) => ({ label: k, value: k, count })),
+          });
+        }
+        if (Object.keys(hzCounts).length > 0) {
+          facets.push({
+            code: 'refresh_rate_hz',
+            label: 'Tần số quét',
+            filter_type: 'CHIP',
+            options: Object.entries(hzCounts)
+              .sort(([a], [b]) => Number(a) - Number(b))
+              .map(([k, count]) => ({ label: `${k} Hz`, value: k, count })),
           });
         }
         if (Object.keys(panelCounts).length > 0) {
@@ -397,11 +430,27 @@ export const productService = {
           });
         }
       } else if (categoryCode === 'MOUSE') {
+        const dpiCounts: Record<string, number> = {};
         const connCounts: Record<string, number> = {};
         catProducts.forEach((p) => {
+          const dpi = p.specs.dpi;
+          if (dpi !== undefined && dpi !== null) {
+            const key = String(dpi);
+            dpiCounts[key] = (dpiCounts[key] || 0) + 1;
+          }
           const c = p.specs.connection_type;
           if (c) connCounts[c] = (connCounts[c] || 0) + 1;
         });
+        if (Object.keys(dpiCounts).length > 0) {
+          facets.push({
+            code: 'dpi',
+            label: 'Độ nhạy (DPI)',
+            filter_type: 'CHIP',
+            options: Object.entries(dpiCounts)
+              .sort(([a], [b]) => Number(a) - Number(b))
+              .map(([k, count]) => ({ label: `${k} DPI`, value: k, count })),
+          });
+        }
         if (Object.keys(connCounts).length > 0) {
           facets.push({
             code: 'connection_type',
@@ -417,15 +466,7 @@ export const productService = {
         code: 'price_ranges',
         label: 'Khoảng giá',
         filter_type: 'CHIP',
-        options: [
-          { label: 'Dưới 5 triệu', value: '0-5000000', count: catProducts.filter((p) => p.price < 5000000).length },
-          {
-            label: '5 - 15 triệu',
-            value: '5000000-15000000',
-            count: catProducts.filter((p) => p.price >= 5000000 && p.price <= 15000000).length,
-          },
-          { label: 'Trên 15 triệu', value: '15000000-999999999', count: catProducts.filter((p) => p.price > 15000000).length },
-        ],
+        options: buildDynamicPriceOptions(catProducts.map((p) => p.price)),
         min_price: 0,
         max_price: 30000000,
       });
