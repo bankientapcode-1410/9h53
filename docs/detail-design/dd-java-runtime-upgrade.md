@@ -21,6 +21,7 @@ The Maven compiler target, CI JDK, Docker build JDK, and Docker runtime JRE must
 | Surface | Location | Required state |
 |---|---|---|
 | Maven compiler target | `backend/pom.xml` | `java.version` is `25` |
+| Maven compiler plugin | `backend/pom.xml` | `annotationProcessorPaths` declares Lombok 1.18.46, `lombok-mapstruct-binding` 0.2.0, and MapStruct Processor 1.5.5.Final for JDK 25 annotation processing |
 | Spring Boot parent | `backend/pom.xml` | Remains on 3.5.x and uses 3.5.16 for Java 25 support |
 | Build container | `backend/Dockerfile` | Maven image uses Temurin 25 |
 | Runtime container | `backend/Dockerfile` | Temurin 25 JRE |
@@ -86,6 +87,7 @@ sequenceDiagram
 | Check | Requirement | Failure handling |
 |---|---|---|
 | Java release | Maven compiles with `java.version=25` | Build must fail rather than silently target an older release |
+| Annotation processing | Configure `maven-compiler-plugin` with explicit `annotationProcessorPaths` (`lombok`, `lombok-mapstruct-binding`, `mapstruct-processor`) | JDK 25 does not scan processors from classpath by default; explicit paths required for Lombok and MapStruct |
 | CI toolchain | Temurin JDK 25 | CI build/test is the acceptance gate |
 | Container build/runtime | Both stages use Temurin 25; runtime remains JRE-only | Docker build or startup failure blocks completion |
 | Framework compatibility | Use Spring Boot 3.5.16 with Java 25 | Do not migrate to Spring Boot 4 as part of this request |

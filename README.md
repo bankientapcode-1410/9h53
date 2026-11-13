@@ -97,12 +97,16 @@ flowchart TD
 ├── docs/
 │   ├── detail-design/               # Tài liệu Thiết kế chi tiết (Detailed Design - DD)
 │   │   ├── dd-uc6-core-rule-engine.md # DD Core Rule Engine & Quản lý Tập luật (UC6)
-│   │   └── dd-java-runtime-upgrade.md # DD Nâng cấp Java Runtime lên Java 25 LTS
+│   │   ├── dd-uc5-product-catalog.md  # DD Quản lý Sản phẩm & Danh mục (UC1a, UC5)
+│   │   ├── dd-java-runtime-upgrade.md # DD Nâng cấp Java Runtime lên Java 25 LTS
+│   │   └── dd-local-dev-automation.md # DD Kịch bản tự động hóa Local Dev / Demo
 │   ├── screens/                     # Toàn bộ ảnh mockup giao diện (screen0.png -> screen6.png)
 │   ├── stitch_prompts.md            # Bộ prompt UI Stitch tương ứng screen0 -> screen6
 │   └── REPO_DESIGN.md               # Bản thiết kế chi tiết kiến trúc repository
 ├── scripts/
+│   ├── dev.ps1                      # Kịch bản điều phối Local Dev / Demo (PowerShell)
 │   └── seed-compat-rules.sql        # 10 tập luật tương thích phần cứng mẫu
+├── dev.cmd                          # 1-Click Local Dev & Demo Launcher trên Windows
 ├── docker-compose.yml               # Khởi chạy full-stack 1-click
 ├── .gitignore
 ├── AGENTS.md                        # Quy định bắt buộc cho AI Agent (DD-First Rule)
@@ -114,6 +118,21 @@ flowchart TD
 ---
 
 ## 🚀 3. Hướng dẫn Cài đặt & Khởi chạy Nhanh (Quickstart)
+
+### Cách 0: Khởi chạy tự động bằng 1-Click Script trên Windows (Nhanh nhất)
+Sử dụng công cụ điều phối `dev.cmd` / `scripts/dev.ps1` để tự động kiểm tra môi trường và bật Demo:
+
+```powershell
+# Mở Menu tương tác + Bảng chẩn đoán môi trường:
+.\dev.cmd
+
+# Hoặc chạy trực tiếp từng chế độ:
+.\dev.cmd ui         # Bật ngay giao diện Frontend Demo (http://localhost:3000)
+.\dev.cmd full       # Bật đồng thời Backend (8080) + Frontend (3000)
+.\dev.cmd setup-db   # Tự động khởi tạo smartpc_db trên MySQL 8.0 cài sẵn trên máy
+.\dev.cmd check      # Kiểm tra trạng thái Node, Java, Maven, MySQL, Docker & Ports
+.\dev.cmd stop       # Dừng toàn bộ tiến trình dev trên port 3000 / 8080
+```
 
 ### Cách 1: Khởi chạy bằng Docker Compose (Khuyến nghị)
 Yêu cầu: Đã cài đặt [Docker Desktop](https://www.docker.com/products/docker-desktop).

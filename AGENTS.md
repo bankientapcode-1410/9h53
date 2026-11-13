@@ -86,3 +86,99 @@ flowchart TD
 3. **Bước 3 — Cập nhật Tham chiếu:** Bổ sung liên kết tài liệu vào mục `4. Thiết kế chi tiết` và mục `6. Cấu trúc thư mục` của [sdd.md](sdd.md).
 4. **Bước 4 — Triển khai Code:** Chỉ bắt đầu viết code Java / React / SQL sau khi tài liệu DD đã hoàn thiện. Code phải tuân thủ đúng tên Class, Method, DTO, Endpoint, Error Code đã định nghĩa trong tài liệu DD.
 5. **Bước 5 — Kiểm thử:** Viết Unit Test bám sát các kịch bản kiểm thử (Test Cases) đã liệt kê ở Mục 8 của file DD.
+
+### 3.1. Lập Kế hoạch Triển khai khi Phát triển Trọn vẹn một UC (Implementation Plan)
+
+> [!IMPORTANT]
+> Khi yêu cầu của User là **triển khai toàn bộ một Use-Case / phân hệ** (VD: "làm UC2 PC Builder", "implement UC4"), AI Agent **BẮT BUỘC** phải lập **Kế hoạch Triển khai (Implementation Plan)** sau khi DD đã hoàn thiện và **trước khi viết code**.
+
+* **Vị trí lưu trữ:** `docs/implementation-plan/plan-<ma-usecase-hoac-ten-module>.md` (cùng hậu tố với file DD, VD: `dd-uc2-pc-builder.md` $\rightarrow$ `plan-uc2-pc-builder.md`).
+* **Nguồn phân rã:** Dùng **WBS tại mục `7. Cấu trúc Phân rã Công việc (WBS)` của [sdd.md](sdd.md)** làm khung. Mỗi nhánh lá của WBS trong UC tương ứng một **Work Package** mang mã `7.x.y` (khớp với mục `4. Thiết kế Chi tiết theo Tác vụ WBS` trong DD, VD: `7.4.1` $\rightarrow$ `7.4.5` của UC6).
+
+#### a) Quy tắc Phân rã Task (Decomposition Rules)
+
+1. **Cấp 1 — Work Package (`7.x.y`):** Lấy nguyên từ WBS trong `sdd.md`. Nếu WBS thiếu hạng mục cần thiết (VD: migration, seed data, config), bổ sung vào cả DD và WBS trước khi lập plan.
+2. **Cấp 2 — Task (`7.x.y.z`):** Bẻ mỗi Work Package thành các task nhỏ theo **tầng kiến trúc**, theo thứ tự phụ thuộc từ dưới lên:
+   1. `DB` — Flyway migration (DDL, index, seed) `V<n>__<mo_ta>.sql`
+   2. `ENTITY/REPO` — JPA Entity, Repository, Projection
+   3. `DOMAIN/SERVICE` — Service, Validator, Strategy, Exception & Error Code
+   4. `API` — Controller, Request/Response DTO, phân quyền Role
+   5. `FE` — API client, types, component/page, route (tuân thủ Mục 4 — Bright Header)
+   6. `TEST` — Unit Test / Integration Test theo mã Test Case trong Mục 8 của DD
+3. **Kích thước task:** Mỗi task phải **hoàn thành và kiểm chứng được độc lập** (build pass / test pass), chạm tới tối đa ~5 file hoặc một lớp/thành phần chính. Task lớn hơn phải tách tiếp.
+4. **Phụ thuộc tường minh:** Mỗi task khai báo `Depends on` (mã task khác hoặc UC khác, VD: UC2 phụ thuộc Rule Engine `7.4.*` của UC6). Không bắt đầu task khi phụ thuộc chưa xong.
+5. **Truy vết DD:** Mỗi task phải tham chiếu tới mục cụ thể trong DD (tên Class/Method, Endpoint, Error Code, Test Case ID). Task không truy vết được về DD $\rightarrow$ cập nhật DD trước.
+
+#### b) Cấu trúc Chuẩn của File Plan
+
+1. **Header:** Mã plan (VD: `PLAN-UC2-PC-BUILDER`), link DD tương ứng, UC & mã WBS `7.x`, trạng thái tổng.
+2. **Sơ đồ phụ thuộc (Mermaid `flowchart LR`)** giữa các Work Package / Task.
+3. **Bảng Task:**
+
+   | Mã Task | Work Package | Tầng | Mô tả | File/Class tác động | Tham chiếu DD | Depends on | Tiêu chí hoàn thành (DoD) | Trạng thái |
+   |---|---|---|---|---|---|---|---|---|
+   | `7.5.2.1` | 7.5.2 Gọi Rule Engine check tương thích | `SERVICE` | Tạo `BuildCompatibilityService.check()` | `BuildCompatibilityService.java` | DD §4.2 | `7.4.3.*` | Unit test `TC-UC2-05..08` pass | `TODO` |
+
+   * Trạng thái dùng: `TODO` / `IN_PROGRESS` / `DONE` / `BLOCKED` (ghi rõ lý do).
+4. **Thứ tự thực thi (Milestones):** Nhóm task thành các mốc có thể demo được (VD: M1 — Backend API chạy được với Postman; M2 — FE tích hợp; M3 — Test đầy đủ).
+5. **Rủi ro & Câu hỏi mở:** Các điểm chưa rõ cần User quyết định.
+
+#### c) Quy trình Thực thi theo Plan
+
+1. Trình bày plan cho User xác nhận trước khi code (cùng lúc với tóm tắt DD ở Bước 5 của flowchart).
+2. Thực hiện **tuần tự từng task**; sau mỗi task: build/test, cập nhật cột `Trạng thái` trong file plan.
+3. Nếu phát hiện sai lệch khi code $\rightarrow$ dừng, cập nhật DD + plan, rồi mới tiếp tục (giữ nguyên nguyên tắc DD-FIRST).
+4. Kết thúc UC: mọi task `DONE`, toàn bộ Test Case trong Mục 8 của DD pass, cập nhật liên kết plan vào [sdd.md](sdd.md) cạnh liên kết DD.
+
+---
+
+## 4. Quy chuẩn Thiết kế Giao diện Header Toàn Cục (Frontend Header Design Rule)
+
+> [!IMPORTANT]
+> Mọi AI Agent khi phát triển, chỉnh sửa hoặc thêm route/trang mới trên Frontend (`frontend/src/App.tsx` hoặc các layout liên quan) **BẮT BUỘC PHẢI GIỮ NGUYÊN VÀ TUÂN THỦ** thiết kế **Bright Global Header 3 tầng** dưới đây:
+
+1. **Tổng thể Header (`<header>`):**
+   * Sticky top (`sticky top-0 z-50 bg-white text-slate-800 shadow-sm border-b border-slate-200`), sử dụng tông màu **Sáng (Bright White `#FFFFFF` & Light Slate `#F8F9FA`)**.
+2. **Tầng 1 — Thanh Công cụ Chính (`bg-white border-b border-slate-100`, chiều cao `h-16`):**
+   * **Logo SmartPC (Trái):** Icon `Cpu` trong hộp bo góc xanh (`bg-smart-blue p-2 rounded-xl text-white`) + chữ `Smart` (`text-smart-navy font-black`) và `PC` (`text-smart-blue font-black`).
+   * **Thanh Tìm kiếm Toàn cục (Giữa):** Form bo tròn (`rounded-full bg-slate-50 border border-slate-200`), icon `Search`, input placeholder `"Tìm kiếm linh kiện, VGA, CPU, PC Gaming..."` đồng bộ với query param `?search=`, và nút submit `Tìm kiếm` (`bg-smart-blue text-white rounded-full`).
+   * **Cụm Tiện ích & Chuyển đổi Chế độ (Phải):**
+     * **Tổng đài tư vấn:** Icon `Phone` (`bg-blue-50 text-smart-blue`) + `"Tổng đài tư vấn"` / `"1900 8899"`.
+     * **Bộ chọn ngôn ngữ:** Pill `VN` kèm icon `ChevronDown`.
+     * **Chuyển đổi `Store` / `Admin`:** Hộp pill (`bg-slate-100 p-1 rounded-xl border border-slate-200`), nút `Store` (`/products`, active `bg-smart-blue text-white`), nút `Admin` (`/admin/products`, kèm icon `ShieldAlert`, active `bg-amber-500 text-white`).
+     * **Giỏ hàng & Đăng nhập:** Icon `ShoppingCart` kèm badge số lượng đỏ (`bg-smart-red`) và nút `Đăng nhập` kèm icon `User` (`bg-blue-50 text-smart-blue border border-blue-200/80`).
+3. **Tầng 2 — Thanh Điều hướng Nghiệp vụ (`bg-white border-b border-slate-200/70`, chiều cao `h-11`):**
+   * **Menu điều hướng bên trái (`font-semibold text-slate-700`):** Hiển thị đúng 5 mục theo thứ tự:
+     1. `Sản phẩm` (`/products`)
+     2. `Danh mục linh kiện` (`/products?category=CPU`)
+     3. `PC Builder` (`/#builder`, kèm icon `Wrench` màu `text-smart-blue` — **TUYỆT ĐỐI chỉ hiển thị nhãn `PC Builder`, KHÔNG ghi `PC Builder (AI)` và KHÔNG gắn badge/icon `PRO` bên cạnh**)
+     4. `PC Profile` (`/#profile`, kèm icon `Bot` màu `text-smart-blue`)
+     5. `Hỗ trợ kỹ thuật` (`/#support`, kèm icon `Headphones` màu `text-slate-500`)
+   * **Huy hiệu cam kết bên phải:** `Chính hãng 100%` (icon `CheckCircle2` màu `text-emerald-600`) | `Giao nhanh 2h` (icon `Zap` màu `text-amber-500`, chữ `text-smart-blue`).
+4. **Tầng 3 — Thanh Ngữ cảnh theo Route (Storefront vs Admin):**
+   * **Trên các route Storefront:** Thanh danh mục phổ biến (`bg-slate-50/90 px-4 py-2`) hiển thị nhãn `Phổ biến:` kèm danh sách 8 danh mục chuẩn (`CPU`, `GPU`, `MOTHERBOARD`, `RAM`, `SSD_M2`, `PSU`, `CASE`, `CPU_COOLER`) dẫn tới `/products?category=<code>`, bên phải là badge `AI Compatibility Engine V4.2 Sẵn sàng` và `Bảo hành 36T 1 đổi 1 tận nơi`.
+   * **Trên các route Admin (`/admin/*`):** Thanh submenu quản trị nền vàng sáng (`bg-amber-50/90 border-t border-amber-200/80`) gồm nhãn `Portal Quản Trị:` và các lối tắt `Linh kiện & Vector Specs (UC5)` (`/admin/products`), `Cây Danh Mục (2 Cấp)` (`/admin/categories`).
+
+---
+
+## 5. Quy chuẩn Phát triển Cục bộ & Triển khai Docker (Local Dev First & Docker Release Rule)
+
+> [!IMPORTANT]
+> **ƯU TIÊN LOCAL DEV TRONG QUÁ TRÌNH PHÁT TRIỂN (LOCAL DEV FIRST):**
+> Trong giai đoạn phát triển, dự án ưu tiên chạy trực tiếp ở máy trạm (Localhost) để tận dụng Hot Module Replacement (HMR) phản hồi tức thì, **chỉ đóng gói và chạy Docker khi hoàn thiện tính năng hoặc release**.
+> 
+> 1. **Đối với Frontend (`frontend/`):**
+>    * Chạy trực tiếp qua Vite dev server: `npm --prefix frontend run dev` hoặc lệnh wrapper `dev.cmd ui` trên cổng `3000`.
+>    * Nhờ cơ chế Vite HMR, mọi thay đổi trong file React/TypeScript/CSS sẽ cập nhật ngay lập tức trên trình duyệt mà không cần build lại hay khởi động lại server.
+>    * **Tuyệt đối không ép buộc build bundle hay copy file vào Docker container Nginx sau mỗi lần sửa nhỏ**, tránh gây độ trễ không cần thiết cho quá trình dev.
+>    * Lưu ý: Đảm bảo container `smartpc-frontend` đã dừng (`docker stop smartpc-frontend`) để giải phóng cổng `3000` cho Vite dev server.
+> 2. **Đối với Backend & Hạ tầng Dữ liệu:**
+>    * Mô hình phát triển khuyên dùng (Hybrid Local Dev): Backend API (port 8080), MySQL (port 3307) và Redis (port 6379) chạy nền qua Docker (`docker compose up -d backend mysql redis`), trong khi Frontend chạy `npm run dev` ở máy host và tự động proxy `/api` sang `http://localhost:8080`.
+>    * Nếu chạy thuần Localhost không dùng Docker: Có thể chạy Spring Boot backend qua Maven/Java nếu máy đã cài JDK 21+, hoặc Frontend có thể chạy độc lập với cơ chế Mock Data Fallback tích hợp sẵn.
+> 3. **Đóng gói & Kiểm thử Docker (Release / Complete Phase):**
+>    * Chỉ khi hoàn thiện tính năng hoặc chuẩn bị bàn giao/triển khai production, mới tiến hành kiểm tra đóng gói Docker toàn diện:
+>      ```bash
+>      npm --prefix frontend run build
+>      docker compose build
+>      docker compose up -d
+>      ```
