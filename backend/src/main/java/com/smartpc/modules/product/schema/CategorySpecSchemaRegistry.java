@@ -262,6 +262,62 @@ public class CategorySpecSchemaRegistry {
                         .build()
         ));
 
+        // 5b. SSD_SATA (Ổ cứng SSD 2.5" SATA III cho máy tính cá nhân)
+        registry.put("SSD_SATA", List.of(
+                FieldDefinition.builder()
+                        .key("interface_type")
+                        .label("Giao tiếp")
+                        .type(FieldType.STRING)
+                        .required(true)
+                        .filterable(true)
+                        .allowedValues(List.of("SATA III 6Gb/s"))
+                        .build(),
+                FieldDefinition.builder()
+                        .key("form_factor")
+                        .label("Kích thước")
+                        .type(FieldType.STRING)
+                        .required(true)
+                        .filterable(false)
+                        .allowedValues(List.of("2.5 inch"))
+                        .build(),
+                FieldDefinition.builder()
+                        .key("capacity_gb")
+                        .label("Dung lượng")
+                        .type(FieldType.INTEGER)
+                        .required(true)
+                        .filterable(true)
+                        .unit("GB")
+                        .minValue(1.0)
+                        .build(),
+                FieldDefinition.builder()
+                        .key("read_speed_mbps")
+                        .label("Tốc độ đọc")
+                        .type(FieldType.INTEGER)
+                        .required(false)
+                        .filterable(false)
+                        .unit("MB/s")
+                        .minValue(1.0)
+                        .build(),
+                FieldDefinition.builder()
+                        .key("write_speed_mbps")
+                        .label("Tốc độ ghi")
+                        .type(FieldType.INTEGER)
+                        .required(false)
+                        .filterable(false)
+                        .unit("MB/s")
+                        .minValue(1.0)
+                        .build(),
+                FieldDefinition.builder()
+                        .key("tdp_w")
+                        .label("Công suất tiêu thụ")
+                        .type(FieldType.NUMBER)
+                        .required(false)
+                        .filterable(false)
+                        .unit("W")
+                        .minValue(0.0001)
+                        .build()
+        ));
+
         // 6. PSU
         registry.put("PSU", List.of(
                 FieldDefinition.builder()

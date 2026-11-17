@@ -14,6 +14,8 @@ export const getProductImageFallback = (categoryCode?: string): string => {
       return 'https://philong.com.vn/media/product/18792-ram-corsair-vengeance-lpx-16gb-ddr4-3200mhz-philong-1.png';
     case 'SSD_M2':
       return 'https://philong.com.vn/media/product/28243-ssd-samsung-990-pro-1tb-pcie-gen4-nvme-philong-1.png';
+    case 'SSD_SATA':
+      return '/images/products/ssd-sata-fallback.svg';
     case 'PSU':
       return 'https://philong.com.vn/media/product/23012-nguon-corsair-cv650-650w-philong-1.png';
     case 'CASE':

@@ -69,6 +69,10 @@ export const ProductSpecsTable: React.FC<ProductSpecsTableProps> = ({
     if (key === 'dpi') return { label: 'Độ nhạy (DPI)', unit: 'DPI' };
     if (key === 'sensor') return { label: 'Cảm biến' };
     if (key === 'weight_g') return { label: 'Trọng lượng', unit: 'g' };
+    if (key === 'interface_type') return { label: 'Chuẩn giao tiếp' };
+    if (key === 'form_factor') return { label: 'Kích thước' };
+    if (key === 'read_speed_mbps') return { label: 'Tốc độ đọc', unit: 'MB/s' };
+    if (key === 'write_speed_mbps') return { label: 'Tốc độ ghi', unit: 'MB/s' };
 
     // Snake case to readable
     const formatted = key

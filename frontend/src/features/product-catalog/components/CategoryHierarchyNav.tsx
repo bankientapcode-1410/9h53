@@ -34,6 +34,7 @@ const getCategoryIcon = (code: string) => {
     case 'GPU':
       return <Tv className="w-4 h-4" />;
     case 'SSD_M2':
+    case 'SSD_SATA':
       return <HardDrive className="w-4 h-4" />;
     case 'PSU':
       return <Zap className="w-4 h-4" />;

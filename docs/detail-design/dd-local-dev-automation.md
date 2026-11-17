@@ -5,7 +5,7 @@
 | Thuộc tính | Giá trị Chi tiết |
 | :--- | :--- |
 | **Mã tài liệu (Document ID)** | `DD-LOCAL-DEV-AUTOMATION` |
-| **Phiên bản (Version)** | `v1.3` (Bổ sung Cấu hình Khởi chạy IDE một chạm F5 / Fn+F5 Launch & Background Tasks) |
+| **Phiên bản (Version)** | `v1.4` (Cập nhật `.\dev.cmd full` chạy đơn terminal, không mở cửa sổ PowerShell mới) |
 | **Package Backend liên quan** | `com.smartpc.modules.product` & `com.smartpc` (Cross-cutting Developer Tooling, Migration & Seed) |
 | **Thư mục Script & Migrations** | `scripts/dev.ps1`, `scripts/seed-inventory.ps1`, `scripts/seed-products.sql`, `backend/src/main/resources/db/migration/V5__seed_product_inventory.sql`, `dev.cmd`, `.vscode/launch.json`, `.vscode/tasks.json` |
 | **Use-Case liên quan** | Cross-cutting Local Development, Demo, Infrastructure Bootstrap, UC1a (Catalog), UC2 (PC Builder), UC4 (Kho hàng & Giỏ hàng), UC5 (Specs) |
@@ -219,6 +219,7 @@ sequenceDiagram
 
 | Lệnh gọi | Chế độ (`Mode`) | Tham số Bổ sung | Mô tả Hành vi |
 | :--- | :---: | :--- | :--- |
+| `.\dev.cmd full` | `full` | `[-NoBrowser]` | Khởi chạy Backend (`8080`) ẩn cùng phiên (ghi log `logs/backend-dev.log`, stream log khởi động tại chỗ) rồi chạy Frontend Vite (`3000`) ngay trong terminal hiện tại; tự động dọn process tree Backend khi thoát |
 | `.\dev.cmd seed` | `seed` | `[-Count <n>] [-Reset]` | Nạp hoặc sinh mới linh kiện kho hàng vào MySQL (tự động nhận diện local hay Docker) |
 | `.\dev.cmd setup-db` | `setup-db` | `[-NoSeed]` | Tạo database, user, cấp quyền và nạp ngay cả rule engine lẫn sản phẩm kho hàng |
 | `.\dev.cmd docker` | `docker` | Không | Chạy Docker Compose, backend tự động chạy Flyway `V5` sinh kho hàng ngay khi khởi động |
@@ -322,3 +323,4 @@ INSERT IGNORE INTO products (
 | `DEV-TC-10` | Hiển thị sản phẩm kho hàng trên Storefront UI | Mở `http://localhost:3000/products` sau khi khởi động | Giao diện hiển thị các card sản phẩm thực tế từ cơ sở dữ liệu thay vì mock rỗng. |
 | `DEV-TC-11` | Nhấn F5 / Fn+F5 khởi chạy Frontend tự động | Nhấn F5 trong IDE | IDE tự khởi động background task `npm: dev (frontend)`, nhận diện port 3000 sẵn sàng, và mở trình duyệt tại `http://localhost:3000`. |
 | `DEV-TC-12` | Hỗ trợ cả Chrome và Edge khi Launch F5 | Chọn cấu hình Edge hoặc Chrome | Trình duyệt tương ứng khởi động không lỗi và mở đúng Storefront. |
+| `DEV-TC-13` | Khởi chạy `.\dev.cmd full` trên duy nhất 1 terminal | Chạy `.\dev.cmd full` trong PowerShell/IDE terminal | Không bật cửa sổ PowerShell mới; log khởi động Backend stream tại chỗ vào `logs/backend-dev.log`, sau đó Vite chạy ngay trên terminal hiện tại; khi thoát (`q`/`Ctrl+C`) Backend trên cổng `8080` được dọn sạch. |

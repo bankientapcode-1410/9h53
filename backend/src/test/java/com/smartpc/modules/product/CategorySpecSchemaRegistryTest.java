@@ -105,4 +105,29 @@ class CategorySpecSchemaRegistryTest {
         assertTrue(mouseSchema.containsKey("connection_type"));
         assertTrue(mouseSchema.containsKey("dpi"));
     }
+
+    @Test
+    @DisplayName("TC-PROD-29: Đăng ký schema danh mục SSD_SATA cho ổ cứng 2.5\" SATA III")
+    void testSsdSataSchemaRegistered() {
+        assertTrue(registry.hasCategory("SSD_SATA"), "Danh mục SSD_SATA phải được đăng ký trong Registry");
+
+        Map<String, FieldDefinition> schema = registry.getSchemaAsMap("SSD_SATA");
+        assertTrue(schema.containsKey("interface_type"));
+        assertTrue(schema.containsKey("form_factor"));
+        assertTrue(schema.containsKey("capacity_gb"));
+        assertTrue(schema.containsKey("read_speed_mbps"));
+        assertTrue(schema.containsKey("write_speed_mbps"));
+        assertTrue(schema.containsKey("tdp_w"));
+
+        assertTrue(schema.get("interface_type").isRequired());
+        assertTrue(schema.get("interface_type").isFilterable());
+        assertEquals(List.of("SATA III 6Gb/s"), schema.get("interface_type").getAllowedValues());
+
+        assertTrue(schema.get("form_factor").isRequired());
+        assertEquals(List.of("2.5 inch"), schema.get("form_factor").getAllowedValues());
+
+        assertTrue(schema.get("capacity_gb").isRequired());
+        assertTrue(schema.get("capacity_gb").isFilterable());
+        assertEquals("GB", schema.get("capacity_gb").getUnit());
+    }
 }

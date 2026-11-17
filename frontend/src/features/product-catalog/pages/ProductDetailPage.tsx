@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ChevronRight,
@@ -15,14 +15,32 @@ import {
 } from 'lucide-react';
 import { useProductDetail } from '../hooks/useProductDetail';
 import { ProductSpecsTable } from '../components/ProductSpecsTable';
+import type { ProductSummaryDTO } from '../types/product.types';
 import { getProductImageFallback } from '@/utils/productImageFallback';
+import { isBuilderSlotCode } from '@/features/pc-builder/constants/slotConfig';
+import { usePCBuilderStore } from '@/stores/usePCBuilderStore';
+
+interface DetailToastState {
+  tone: 'success' | 'warning';
+  message: string;
+  showBuilderLink?: boolean;
+}
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { product, isLoading, error } = useProductDetail(id);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastState, setToastState] = useState<DetailToastState | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   const formatVND = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -31,19 +49,69 @@ export const ProductDetailPage: React.FC = () => {
     }).format(price);
   };
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+  const showToast = (nextToast: DetailToastState, durationMs = 4000) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setToastState(nextToast);
+    toastTimerRef.current = setTimeout(() => {
+      setToastState(null);
+      toastTimerRef.current = null;
+    }, durationMs);
   };
 
   const handleAddToCart = () => {
     if (!product || !product.in_stock) return;
-    showToast(`Đã thêm "${product.name}" vào giỏ hàng!`);
+    showToast({
+      tone: 'success',
+      message: `Đã thêm "${product.name}" vào giỏ hàng!`,
+    });
   };
 
   const handleAddToBuilder = () => {
     if (!product) return;
-    showToast(`Đã đưa linh kiện vào khe cắm ${product.category.category_code} trong PC Builder!`);
+    const rawCategory = (product.category?.category_code || '').trim().toUpperCase();
+    if (!isBuilderSlotCode(rawCategory)) {
+      showToast({
+        tone: 'warning',
+        message: `Danh mục "${product.category?.category_name || rawCategory || 'Khác'}" chưa hỗ trợ khe lắp ráp PC Builder.`,
+        showBuilderLink: false,
+      });
+      return;
+    }
+
+    const productSummary: ProductSummaryDTO = {
+      product_id: product.product_id,
+      name: product.name,
+      brand: product.brand,
+      category_code: rawCategory,
+      category_name: product.category?.category_name || rawCategory,
+      image_url: product.image_url || '',
+      price: product.price,
+      in_stock: product.in_stock,
+      benchmark_score: product.benchmark_score ?? 0,
+      key_specs: (product.specs || {}) as Record<
+        string,
+        string | number | boolean | string[]
+      >,
+    };
+
+    usePCBuilderStore.getState().selectProduct(rawCategory, productSummary);
+    const notice = usePCBuilderStore.getState().slotNotice;
+    if (notice) {
+      showToast({
+        tone: 'warning',
+        message: notice,
+        showBuilderLink: true,
+      });
+      return;
+    }
+
+    showToast({
+      tone: 'success',
+      message: `Đã đưa linh kiện vào khe ${rawCategory} trong PC Builder!`,
+      showBuilderLink: true,
+    });
   };
 
   if (isLoading) {
@@ -91,10 +159,30 @@ export const ProductDetailPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-smart-navy text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-in fade-in slide-in-from-bottom-3">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          <span className="text-sm font-semibold">{toastMessage}</span>
+      {toastState && (
+        <div
+          data-testid="product-detail-toast"
+          className={`fixed bottom-6 right-6 z-50 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border animate-in fade-in slide-in-from-bottom-3 ${
+            toastState.tone === 'warning'
+              ? 'bg-amber-900 border-amber-500'
+              : 'bg-smart-navy border-slate-700'
+          }`}
+        >
+          {toastState.tone === 'warning' ? (
+            <AlertTriangle className="w-5 h-5 text-amber-300 flex-shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+          )}
+          <span className="text-sm font-semibold">{toastState.message}</span>
+          {toastState.showBuilderLink && (
+            <Link
+              to="/builder"
+              onClick={(e) => e.stopPropagation()}
+              className="ml-2 text-xs font-black text-sky-300 hover:text-white underline underline-offset-2 whitespace-nowrap"
+            >
+              Mở PC Builder
+            </Link>
+          )}
         </div>
       )}
 

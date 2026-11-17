@@ -8,6 +8,7 @@ export type CategoryCode =
   | 'RAM' 
   | 'GPU' 
   | 'SSD_M2' 
+  | 'SSD_SATA' 
   | 'PSU' 
   | 'CASE' 
   | 'CPU_COOLER';

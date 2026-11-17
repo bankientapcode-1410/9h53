@@ -171,7 +171,7 @@ flowchart TD
 
 **Luồng sự kiện chính (Happy Path):**
 1. Người dùng chọn một danh mục linh kiện (Ví dụ: "Card màn hình - VGA") từ thanh điều hướng hoặc icon danh mục trên trang chủ.
-2. Hệ thống tải và hiển thị trang danh mục gồm: Bộ lọc thông số (Hãng, Khoảng giá, VRAM, Chuẩn PCIe), danh sách sản phẩm dạng lưới (Grid), và thanh sắp xếp (Giá tăng/giảm, Mới nhất, Bán chạy).
+2. Hệ thống tải và hiển thị trang danh mục gồm: Bộ lọc thông số (Hãng, Khoảng giá, VRAM, Chuẩn PCIe), danh sách sản phẩm dạng lưới (Grid), và thanh sắp xếp (Mới nhất, Cũ nhất, Giá tăng dần, Giá giảm dần).
 3. Người dùng chọn bộ lọc mong muốn (Ví dụ: Hãng "NVIDIA", VRAM "8GB", Mức giá "< 10 triệu").
 4. Hệ thống gửi request lọc đến backend, truy vấn cơ sở dữ liệu và trả về danh sách sản phẩm thỏa mãn kèm phân trang.
 5. Người dùng có thể bấm vào thẻ sản phẩm để xem chi tiết, hoặc bấm nút "+ PC Builder" để đưa trực tiếp vào cấu hình máy tính đang lắp ráp.
@@ -910,11 +910,12 @@ sequenceDiagram
 5. **Output:** Sau khi tìm được phương án tối ưu (Hiệu năng tốt + Đúng ngân sách + Rule Engine báo tương thích an toàn), AI sẽ sinh văn bản giải thích lý luận của mình và trả về Frontend để người dùng tham khảo và bấm "Thêm vào giỏ".
 
 > **Tài liệu Thiết kế Chi tiết (Detailed Design - DD) theo từng phân hệ:**
+> * **Công cụ Xây dựng PC - PC Builder & Kiểm tra tương thích real-time (UC2 - WBS 7.5, v1.2 `SSD_SATA` 2.5" là khe nội bộ tùy chọn ngay dưới `SSD_M2`):** [docs/detail-design/dd-uc2-pc-builder.md](docs/detail-design/dd-uc2-pc-builder.md) | [Wave Plan](docs/implementation-plan/plan-uc2-pc-builder.md)
 > * **Core Rule Engine - Quản lý Tập luật & Đánh giá Tương thích (UC6 - v1.2 Hardening):** [docs/detail-design/dd-uc6-core-rule-engine.md](docs/detail-design/dd-uc6-core-rule-engine.md) | [Kế hoạch Triển khai](docs/implementation-plan/plan-uc6-core-rule-engine.md)
-> * **Quản lý Sản phẩm & Danh mục (UC1a, UC5 - v1.6 Đa dạng hóa Đèn LED Bàn phím cơ & Mở rộng Bộ lọc led_type):** [docs/detail-design/dd-uc5-product-catalog.md](docs/detail-design/dd-uc5-product-catalog.md) | [Kế hoạch Triển khai](docs/implementation-plan/plan-uc5-product-catalog.md)
+> * **Quản lý Sản phẩm & Danh mục (UC1a, UC5 - v1.7 Bổ sung Ổ cứng `SSD_SATA` 2.5" theo PA1):** [docs/detail-design/dd-uc5-product-catalog.md](docs/detail-design/dd-uc5-product-catalog.md) | [Sub-DD SSD_SATA](docs/detail-design/uc5-product-catalog/dd-uc5-ssd-sata.md) | [Kế hoạch Triển khai](docs/implementation-plan/plan-uc5-product-catalog.md)
 > * **Chat Tư vấn Phần cứng với AI (UC1):** [docs/detail-design/dd-uc1-ai-chat.md](docs/detail-design/dd-uc1-ai-chat.md) | [Kế hoạch Triển khai](docs/implementation-plan/plan-uc1-ai-chat.md)
 > * **Java Runtime Upgrade (Java 25 LTS):** [docs/detail-design/dd-java-runtime-upgrade.md](docs/detail-design/dd-java-runtime-upgrade.md)
-> * **Local Dev & Demo Automation Script (v1.3 - Tự động Sinh Sản phẩm Kho hàng & Cấu hình IDE F5 Launch):** [docs/detail-design/dd-local-dev-automation.md](docs/detail-design/dd-local-dev-automation.md)
+> * **Local Dev & Demo Automation Script (v1.4 - Tự động Sinh Sản phẩm Kho hàng, IDE F5 Launch & Single-Terminal `full` Mode):** [docs/detail-design/dd-local-dev-automation.md](docs/detail-design/dd-local-dev-automation.md)
 
 ## 5. Thiết kế giao diện người dùng (UI/UX)
 
@@ -1061,11 +1062,15 @@ project1/
 ├── dev.cmd           # Wrapper khởi chạy nhanh môi trường Local Dev / Demo 1-click trên Windows
 └── docs/             # Tài liệu kỹ thuật dự án: Thư mục thiết kế chi tiết (docs/detail-design/), kế hoạch triển khai (docs/implementation-plan/), hình ảnh mockup giao diện (docs/screens/) và đặc tả kiến trúc
     ├── detail-design/
-    │   ├── dd-uc5-product-catalog.md      # Thiết kế chi tiết Quản lý Sản phẩm & Danh mục (UC1a, UC5 - v1.6 Đa dạng hóa Đèn LED Phím cơ & Mở rộng Bộ lọc)
+    │   ├── dd-uc2-pc-builder.md           # Master DD Công cụ Xây dựng PC - PC Builder (UC2 & WBS 7.5)
+    │   ├── uc2-pc-builder/                # 6 Sub-DD chức năng UC2 (7.5.1 slot-picker -> 7.5.6 add-to-cart)
+    │   ├── dd-uc5-product-catalog.md      # Thiết kế chi tiết Quản lý Sản phẩm & Danh mục (UC1a, UC5 - v1.7 Mở rộng SSD_SATA)
+    │   ├── uc5-product-catalog/           # Sub-DD mở rộng UC5 (dd-uc5-ssd-sata.md)
     │   ├── dd-uc6-core-rule-engine.md     # Thiết kế chi tiết Core Rule Engine & Quản lý Tập luật (UC6 - v1.2)
     │   ├── dd-java-runtime-upgrade.md     # Thiết kế nâng cấp Java 25 LTS
     │   └── dd-local-dev-automation.md     # Thiết kế kịch bản tự động hóa Local Dev / Demo & Sinh kho hàng tự động (v1.2)
     └── implementation-plan/
+        ├── plan-uc2-pc-builder.md         # Wave & Coordination Plan PC Builder (UC2 & WBS 7.5)
         └── plan-uc6-core-rule-engine.md   # Kế hoạch triển khai Core Rule Engine (UC6 & WBS 7.4)
 ```
 

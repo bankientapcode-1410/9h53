@@ -35,13 +35,16 @@ import { AdminCategoryPage } from './features/admin/categories/pages/AdminCatego
 import { AdminRuleListPage } from './features/admin/rules/pages/AdminRuleListPage';
 import { AIChatWidget } from './features/ai-chat/components/AIChatWidget';
 import { AISearchPage } from './features/ai-chat/pages/AISearchPage';
+import { PCBuilderPage } from './features/pc-builder/pages/PCBuilderPage';
+import { useCartStore } from './stores/useCartStore';
 
 const POPULAR_CATEGORIES = [
   { label: 'CPU / Vi xử lý', code: 'CPU' },
   { label: 'VGA / Card đồ họa', code: 'GPU' },
   { label: 'Mainboard / Bo mạch chủ', code: 'MOTHERBOARD' },
   { label: 'RAM', code: 'RAM' },
-  { label: 'Ổ cứng SSD', code: 'SSD_M2' },
+  { label: 'SSD M.2 NVMe', code: 'SSD_M2' },
+  { label: 'SSD SATA 2.5"', code: 'SSD_SATA' },
   { label: 'Nguồn PSU', code: 'PSU' },
   { label: 'Vỏ Case', code: 'CASE' },
   { label: 'Tản nhiệt & Phụ kiện', code: 'CPU_COOLER' },
@@ -57,6 +60,7 @@ function Header() {
   const isAdminRoute = location.pathname.startsWith('/admin');
   const activeCategory = searchParams.get('category') || '';
   const urlSearch = searchParams.get('search') || '';
+  const cartCount = useCartStore((s) => s.totalItemsCount());
 
   const [headerSearch, setHeaderSearch] = useState(urlSearch);
 
@@ -168,8 +172,11 @@ function Header() {
               title="Giỏ hàng SmartPC"
             >
               <ShoppingCart className="w-5 h-5" />
-              <span className="absolute -top-0.5 -right-0.5 bg-smart-red text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
-                2
+              <span
+                data-testid="header-cart-badge"
+                className="absolute -top-0.5 -right-0.5 bg-smart-red text-white text-[10px] font-black min-w-4 h-4 px-1 rounded-full flex items-center justify-center shadow-sm"
+              >
+                {cartCount}
               </span>
             </Link>
 
@@ -211,13 +218,17 @@ function Header() {
               Danh mục linh kiện
             </Link>
 
-            <a
-              href="/#builder"
-              className="px-2.5 py-1.5 rounded-lg hover:text-smart-blue hover:bg-slate-50 flex items-center gap-1.5 transition whitespace-nowrap"
+            <Link
+              to="/builder"
+              className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition whitespace-nowrap ${
+                location.pathname === '/builder'
+                  ? 'text-smart-blue bg-blue-50/80 font-bold'
+                  : 'hover:text-smart-blue hover:bg-slate-50'
+              }`}
             >
               <Wrench className="w-3.5 h-3.5 text-smart-blue" />
               <span>PC Builder</span>
-            </a>
+            </Link>
 
             <a
               href="/#profile"
@@ -379,9 +390,9 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="/#builder" className="hover:text-smart-blue transition">
+                <Link to="/builder" className="hover:text-smart-blue transition">
                   Công cụ Build PC & Rule Engine (UC2)
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="/#profile" className="hover:text-smart-blue transition">
@@ -455,6 +466,7 @@ export default function App() {
             <Route path="/" element={<CategoryBrowsePage />} />
             <Route path="/products" element={<CategoryBrowsePage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
+            <Route path="/builder" element={<PCBuilderPage />} />
             <Route path="/ai-search" element={<AISearchPage />} />
             <Route path="/admin/products" element={<AdminProductListPage />} />
             <Route path="/admin/categories" element={<AdminCategoryPage />} />

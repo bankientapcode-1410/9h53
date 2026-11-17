@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { aiChatService } from '../../../services/aiChatService';
 import { ChatMessage } from '../types/chat.types';
+import type { AskAIBuildEventDetail } from '../../pc-builder/types/builder.types';
 
 const INITIAL_MESSAGE: ChatMessage = {
   id: 'welcome',
@@ -43,8 +44,17 @@ export function AIChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const messagesRef = useRef<ChatMessage[]>(messages);
+  messagesRef.current = messages;
+  const isLoadingRef = useRef<boolean>(isLoading);
+  isLoadingRef.current = isLoading;
+  const isOpenRef = useRef<boolean>(isOpen);
+  isOpenRef.current = isOpen;
+
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
@@ -56,8 +66,8 @@ export function AIChatWidget() {
   }, [isOpen, messages]);
 
   const handleSendMessage = async (textToSend?: string) => {
-    const text = (textToSend || inputValue).trim();
-    if (!text || isLoading) return;
+    const text = (textToSend ?? inputValue).trim();
+    if (!text || isLoadingRef.current) return;
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -66,16 +76,17 @@ export function AIChatWidget() {
       timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     };
 
+    const history = messagesRef.current.slice(-6).map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+    isLoadingRef.current = true;
     setMessages((prev) => [...prev, userMsg]);
     setInputValue('');
     setIsLoading(true);
 
     try {
-      const history = messages.slice(-6).map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
       const response = await aiChatService.sendMessage({
         message: text,
         history,
@@ -95,12 +106,41 @@ export function AIChatWidget() {
     } catch (err) {
       console.error('Chat error:', err);
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
-      if (!isOpen) {
+      if (!isOpenRef.current) {
         setHasUnread(true);
       }
     }
   };
+
+  const handleSendMessageRef = useRef(handleSendMessage);
+  handleSendMessageRef.current = handleSendMessage;
+
+  useEffect(() => {
+    const handleAskAIBuild = (event: Event) => {
+      const customEvent = event as CustomEvent<AskAIBuildEventDetail>;
+      const detail = customEvent.detail;
+
+      isOpenRef.current = true;
+      setIsOpen(true);
+      setHasUnread(false);
+
+      const prompt = detail?.prompt?.trim();
+      if (!prompt) return;
+
+      if (detail.auto_send) {
+        void handleSendMessageRef.current(prompt);
+      } else {
+        setInputValue(prompt);
+      }
+    };
+
+    window.addEventListener('smartpc:ask-ai-build', handleAskAIBuild);
+    return () => {
+      window.removeEventListener('smartpc:ask-ai-build', handleAskAIBuild);
+    };
+  }, []);
 
   const handleResetChat = () => {
     setMessages([INITIAL_MESSAGE]);

@@ -7,6 +7,7 @@ CATEGORIES = {
     'c0000001-0000-0000-0000-000000000003': {'category_id': 'c0000001-0000-0000-0000-000000000003', 'category_code': 'RAM', 'category_name': 'Bộ nhớ trong (RAM)'},
     'c0000001-0000-0000-0000-000000000004': {'category_id': 'c0000001-0000-0000-0000-000000000004', 'category_code': 'GPU', 'category_name': 'Card màn hình (VGA)'},
     'c0000001-0000-0000-0000-000000000005': {'category_id': 'c0000001-0000-0000-0000-000000000005', 'category_code': 'SSD_M2', 'category_name': 'Ổ cứng SSD M.2 NVMe'},
+    'c0000001-0000-0000-0000-000000000012': {'category_id': 'c0000001-0000-0000-0000-000000000012', 'category_code': 'SSD_SATA', 'category_name': 'Ổ cứng SSD SATA 2.5"'},
     'c0000001-0000-0000-0000-000000000006': {'category_id': 'c0000001-0000-0000-0000-000000000006', 'category_code': 'PSU', 'category_name': 'Nguồn máy tính (PSU)'},
     'c0000001-0000-0000-0000-000000000007': {'category_id': 'c0000001-0000-0000-0000-000000000007', 'category_code': 'CASE', 'category_name': 'Vỏ máy tính (Case)'},
     'c0000001-0000-0000-0000-000000000008': {'category_id': 'c0000001-0000-0000-0000-000000000008', 'category_code': 'CPU_COOLER', 'category_name': 'Tản nhiệt CPU'},
@@ -79,6 +80,7 @@ migrations = [
     'backend/src/main/resources/db/migration/V6__peripherals_and_expanded_inventory.sql',
     'backend/src/main/resources/db/migration/V7__supplemental_test_seed_coverage.sql',
     'backend/src/main/resources/db/migration/V11__expand_keyboard_led_types_and_products.sql',
+    'backend/src/main/resources/db/migration/V12__add_ssd_sata_category_and_products.sql',
 ]
 
 prod_map = {}
@@ -182,7 +184,7 @@ mock_category_tree = """export const MOCK_CATEGORY_TREE: CategoryTreeDTO[] = [
     category_id: 'g0000001-0000-0000-0000-000000000002',
     category_code: 'STORAGE_DEVICES',
     category_name: 'Thiết bị lưu trữ',
-    description: 'Ổ cứng SSD NVMe M.2 & SATA',
+    description: 'Ổ cứng SSD M.2 NVMe & SSD SATA 2.5"',
     parent_category_id: null,
     has_schema: false,
     children: [
@@ -191,6 +193,15 @@ mock_category_tree = """export const MOCK_CATEGORY_TREE: CategoryTreeDTO[] = [
         category_code: 'SSD_M2',
         category_name: 'Ổ cứng SSD M.2 NVMe',
         description: 'Tốc độ đọc ghi cực cao chuẩn PCIe 3.0, 4.0, 5.0',
+        parent_category_id: 'g0000001-0000-0000-0000-000000000002',
+        has_schema: true,
+        children: [],
+      },
+      {
+        category_id: 'c0000001-0000-0000-0000-000000000012',
+        category_code: 'SSD_SATA',
+        category_name: 'Ổ cứng SSD SATA 2.5"',
+        description: 'Ổ cứng SSD chuẩn 2.5 inch giao tiếp SATA III 6Gb/s ổn định, tiết kiệm cho máy tính cá nhân',
         parent_category_id: 'g0000001-0000-0000-0000-000000000002',
         has_schema: true,
         children: [],
@@ -333,6 +344,19 @@ mock_specs_schema = """export const MOCK_SPECS_SCHEMA: Record<string, SpecMetada
       { key: 'capacity_gb', label: 'Dung lượng ổ cứng', type: 'INTEGER', required: true, filterable: true, unit: 'GB', minValue: 120 },
       { key: 'read_speed_mbps', label: 'Tốc độ đọc tối đa', type: 'INTEGER', required: false, filterable: false, unit: 'MB/s' },
       { key: 'tdp_w', label: 'Công suất', type: 'NUMBER', required: false, filterable: false, unit: 'W' },
+    ],
+  },
+  SSD_SATA: {
+    category_code: 'SSD_SATA',
+    category_name: 'Ổ cứng SSD SATA 2.5"',
+    has_schema: true,
+    fields: [
+      { key: 'interface_type', label: 'Giao tiếp', type: 'STRING', required: true, filterable: true, allowedValues: ['SATA III 6Gb/s'] },
+      { key: 'form_factor', label: 'Kích thước', type: 'STRING', required: true, filterable: false, allowedValues: ['2.5 inch'] },
+      { key: 'capacity_gb', label: 'Dung lượng', type: 'INTEGER', required: true, filterable: true, unit: 'GB', minValue: 1 },
+      { key: 'read_speed_mbps', label: 'Tốc độ đọc', type: 'INTEGER', required: false, filterable: false, unit: 'MB/s', minValue: 1 },
+      { key: 'write_speed_mbps', label: 'Tốc độ ghi', type: 'INTEGER', required: false, filterable: false, unit: 'MB/s', minValue: 1 },
+      { key: 'tdp_w', label: 'Công suất tiêu thụ', type: 'NUMBER', required: false, filterable: false, unit: 'W', minValue: 0.0001 },
     ],
   },
   PSU: {

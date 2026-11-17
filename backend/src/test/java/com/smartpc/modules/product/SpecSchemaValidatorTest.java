@@ -172,4 +172,34 @@ class SpecSchemaValidatorTest {
         assertEquals(32000, normMouse.get("dpi"));
         assertEquals("Wireless", normMouse.get("connection_type"));
     }
+
+    @Test
+    @DisplayName("TC-PROD-30: Xác thực & chuẩn hóa specs cho danh mục SSD_SATA")
+    void testValidateSpecs_SsdSata() {
+        Map<String, Object> validSpecs = new LinkedHashMap<>();
+        validSpecs.put("interface_type", "sata iii 6gb/s");
+        validSpecs.put("form_factor", "2.5 INCH");
+        validSpecs.put("capacity_gb", "1000");
+        validSpecs.put("read_speed_mbps", 560);
+        validSpecs.put("write_speed_mbps", 530);
+        validSpecs.put("tdp_w", 3.0);
+
+        Map<String, Object> normalized = validator.validateSpecs("SSD_SATA", validSpecs);
+        assertNotNull(normalized);
+        assertEquals("SATA III 6Gb/s", normalized.get("interface_type"));
+        assertEquals("2.5 inch", normalized.get("form_factor"));
+        assertEquals(1000, normalized.get("capacity_gb"));
+        assertTrue(normalized.get("capacity_gb") instanceof Integer);
+
+        Map<String, Object> invalidSpecs = new LinkedHashMap<>();
+        invalidSpecs.put("interface_type", "IDE/PATA");
+        invalidSpecs.put("form_factor", "2.5 inch");
+        // thiếu capacity_gb
+
+        BusinessException ex = assertThrows(BusinessException.class, () ->
+                validator.validateSpecs("SSD_SATA", invalidSpecs));
+        assertEquals(ErrorCode.PROD_INVALID_SPECS.getCode(), ex.getErrorCode());
+        assertTrue(ex.getErrors().stream().anyMatch(e -> "specs.interface_type".equals(e.getField())));
+        assertTrue(ex.getErrors().stream().anyMatch(e -> "specs.capacity_gb".equals(e.getField())));
+    }
 }

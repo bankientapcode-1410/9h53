@@ -2,6 +2,16 @@ import { useSearchParams } from 'react-router-dom';
 import { useMemo, useCallback } from 'react';
 import { ProductFilterCriteria } from '../types/product.types';
 
+type AllowedSort = NonNullable<ProductFilterCriteria['sort']>;
+
+function normalizeSort(raw: string | null): AllowedSort {
+  const val = raw?.trim().toLowerCase();
+  if (val === 'oldest' || val === 'price_asc' || val === 'price_desc') {
+    return val;
+  }
+  return 'newest';
+}
+
 export function useProductFilter() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -25,7 +35,7 @@ export function useProductFilter() {
         ? parsedMax
         : undefined;
 
-    const sort = (searchParams.get('sort') as any) || 'newest';
+    const sort = normalizeSort(searchParams.get('sort'));
     const page = searchParams.get('page') ? Number(searchParams.get('page')) : 0;
     const size = searchParams.get('size') ? Number(searchParams.get('size')) : 12;
     const search = searchParams.get('search') || undefined;
@@ -81,8 +91,8 @@ export function useProductFilter() {
       if (catCode) {
         current.set('category', catCode);
       }
-      const sort = searchParams.get('sort');
-      if (sort && sort !== 'newest') current.set('sort', sort);
+      const sort = normalizeSort(searchParams.get('sort'));
+      if (sort !== 'newest') current.set('sort', sort);
       const search = searchParams.get('search');
       if (search) current.set('search', search);
 

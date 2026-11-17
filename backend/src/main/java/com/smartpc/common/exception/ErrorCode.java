@@ -46,7 +46,15 @@ public enum ErrorCode {
     RULE_DUPLICATE_DEFINITION(HttpStatus.CONFLICT, "Quy tắc tương thích với cùng cặp danh mục, khóa thông số và toán tử này đã tồn tại"),
     RULE_DRY_RUN_EMPTY_PRODUCTS(HttpStatus.BAD_REQUEST, "Vui lòng chọn ít nhất một sản phẩm mẫu để chạy thử quy tắc"),
     RULE_CHECK_TOO_MANY_PRODUCTS(HttpStatus.BAD_REQUEST, "Số lượng sản phẩm khác nhau trong một lần kiểm tra tương thích vượt quá giới hạn cho phép"),
-    RULE_CHECK_QUANTITY_EXCEEDED(HttpStatus.BAD_REQUEST, "Số lượng của một sản phẩm trong cấu hình vượt quá giới hạn cho phép");
+    RULE_CHECK_QUANTITY_EXCEEDED(HttpStatus.BAD_REQUEST, "Số lượng của một sản phẩm trong cấu hình vượt quá giới hạn cho phép"),
+
+    // PC Builder Subsystem (UC2)
+    BUILDER_EMPTY_CONFIG(HttpStatus.BAD_REQUEST, "Vui lòng chọn ít nhất một linh kiện trong cấu hình PC"),
+    BUILDER_INVALID_SLOT(HttpStatus.BAD_REQUEST, "Mã khe linh kiện (slot) không hợp lệ cho PC Builder"),
+    BUILDER_SLOT_CAPACITY_EXCEEDED(HttpStatus.BAD_REQUEST, "Khe linh kiện đơn chỉ cho phép chọn tối đa 1 sản phẩm với số lượng 1"),
+    BUILDER_COMPATIBILITY_CONFLICT(HttpStatus.CONFLICT, "Cấu hình đang có xung đột phần cứng mức ERROR. Vui lòng khắc phục trước khi thêm vào giỏ"),
+    BUILDER_WARNING_ACK_REQUIRED(HttpStatus.CONFLICT, "Cấu hình có cảnh báo kỹ thuật (WARNING). Vui lòng xác nhận rủi ro để tiếp tục"),
+    BUILDER_PRODUCT_UNAVAILABLE(HttpStatus.CONFLICT, "Một hoặc nhiều linh kiện không tồn tại hoặc đã ngừng kinh doanh");
 
     private final HttpStatus httpStatus;
     private final String defaultMessage;

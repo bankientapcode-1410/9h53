@@ -2,7 +2,9 @@
 ## Phân hệ: Quản lý Sản phẩm & Danh mục (UC1a, UC5 & WBS 7.2)
 
 * **Mã tài liệu:** `DD-UC5-PRODUCT-CATALOG`
-* **Phiên bản:** `v1.6` (Bổ sung đa dạng loại Đèn LED Bàn phím cơ & Mở rộng bộ lọc `led_type`: RGB, Monochrome, Rainbow, None)
+* **Phiên bản:** `v1.7` (Mở rộng danh mục `SSD_SATA` 2.5" dưới `STORAGE_DEVICES` theo PA1 — xem Sub-DD [dd-uc5-ssd-sata.md](uc5-product-catalog/dd-uc5-ssd-sata.md))
+* **Sub-DD Mở rộng:**
+  * [`7.2.7` Bổ sung Ổ cứng SSD SATA 2.5" (`SSD_SATA`)](uc5-product-catalog/dd-uc5-ssd-sata.md) *(Migration `V12`, `CategorySpecSchemaRegistry`, Search Intent & UI Catalog/MockData)*
 * **Phân hệ (Package):** `com.smartpc.modules.product` (Backend) & `src/features/product-catalog`, `src/features/admin/products`, `src/features/admin/categories` (Frontend)
 * **Liên kết Use-Case:** 
   * `UC1a` (Duyệt sản phẩm theo danh mục & Quick Chips Filter)
@@ -108,7 +110,7 @@ frontend/src/
 │   │   │   ├── ProductGrid.tsx             # Lưới hiển thị danh sách sản phẩm
 │   │   │   ├── ProductCard.tsx             # Thẻ sản phẩm kèm nút "Thêm giỏ" & "+ PC Builder"
 │   │   │   ├── ProductSpecsTable.tsx       # Bảng thông số kỹ thuật chi tiết zebra striping
-│   │   │   └── SortDropdown.tsx            # Dropdown sắp xếp (Mới nhất, Giá tăng/giảm, Benchmark)
+│   │   │   └── SortDropdown.tsx            # Dropdown sắp xếp (Mới nhất, Cũ nhất, Giá tăng dần, Giá giảm dần)
 │   │   ├── hooks/
 │   │   │   ├── useProductFilter.ts         # Đồng bộ state bộ lọc <-> URL query (page, size, filters)
 │   │   │   └── useProductDetail.ts         # Hook fetch chi tiết sản phẩm & trạng thái tồn kho
@@ -480,8 +482,8 @@ sequenceDiagram
     end
     UI-->>User: Hiển thị Quick Chips & bộ lọc dải giá
 
-    User->>UI: Chọn [NVIDIA], [VRAM 8GB], [Dưới 10 triệu], Sắp xếp "Benchmark"
-    UI->>Ctrl: GET /api/v1/products?category=GPU&brand=NVIDIA&specs[vram_gb]=8&max_price=10000000&sort=benchmark_desc&page=0&size=12
+    User->>UI: Chọn [NVIDIA], [VRAM 8GB], [Dưới 10 triệu], Sắp xếp "Giá tăng dần"
+    UI->>Ctrl: GET /api/v1/products?category=GPU&brand=NVIDIA&specs[vram_gb]=8&max_price=10000000&sort=price_asc&page=0&size=12
     Ctrl->>Svc: getFilteredProducts(criteria, pageable)
     Svc->>FVal: validate(criteria)
     alt Spec key không filterable / sort sai / min_price > max_price / size > 48
@@ -494,7 +496,7 @@ sequenceDiagram
         else Cache Miss
             Svc->>Repo: findAll(ProductSpecifications.of(criteria), PageRequest)
             Note over Repo,DB: Dùng idx (category_id, is_active, v_vram_gb)
-            Repo->>DB: SELECT ... WHERE category_id=:cat AND is_active=1 AND deleted_at IS NULL AND brand IN (:brands) AND v_vram_gb=8 AND price<=10000000 ORDER BY benchmark_score DESC, product_id LIMIT 12 OFFSET 0
+            Repo->>DB: SELECT ... WHERE category_id=:cat AND is_active=1 AND deleted_at IS NULL AND brand IN (:brands) AND v_vram_gb=8 AND price<=10000000 ORDER BY price ASC, product_id LIMIT 12 OFFSET 0
             DB-->>Repo: 12 bản ghi + COUNT
             Repo-->>Svc: Page of Product
             Svc->>Svc: MapStruct -> ProductSummaryDTO (trích key_specs, in_stock)
@@ -922,7 +924,7 @@ Bám sát mockup `docs/screens/screen1.png` và `docs/screens/screen3.png`:
      * Menu trượt xuống (Slide Down Menu) nổi bật (bsolute z-30 shadow-lg), hỗ trợ nhấp để chọn giá trị, tùy chọn đầu tiên là Tất cả <Tên thông số> để hủy lọc.
      * Tự động đóng menu khi nhấp chuột ra ngoài (click-outside).
 
-2. **Toolbar & Sắp xếp:** Tổng số sản phẩm (VD: *"Tìm thấy 48 card đồ họa"*); Dropdown: `newest` (Mới nhất), `oldest` (Cũ nhất), `price_asc`, `price_desc`.
+2. **Toolbar & Sắp xếp:** Tổng số sản phẩm (VD: *"Tìm thấy 48 card đồ họa"*); Dropdown chỉ gồm 4 lựa chọn đúng thứ tự: `newest` (Mới nhất), `oldest` (Cũ nhất), `price_asc` (Giá tăng dần), `price_desc` (Giá giảm dần).
 3. **Lưới 4 cột (`ProductGrid.tsx` & `ProductCard.tsx`):** Ảnh 1:1, tên sản phẩm cố định chiều cao 2 dòng (`block line-clamp-2 min-h-[2.5rem]`) để các dãy tag `key_specs` trên cùng hàng luôn thẳng hàng ngang, các tag `key_specs` (trích tối đa 4 trường theo thứ tự ưu tiên `filterable` rồi tới các trường trong `CategorySpecSchemaRegistry`), giá, nhãn `HẾT HÀNG` khi `in_stock = false`.
    * **Quy chuẩn hiển thị & căn chỉnh `key_specs` trên `ProductCard.tsx`:**
      * Container dùng `flex flex-wrap items-center content-start gap-1.5 mt-2` (tránh `align-items: stretch` / `align-content: stretch` làm giãn chiều cao hộp tag hoặc gây lệch vị trí cao-thấp giữa các thẻ).
@@ -1369,7 +1371,7 @@ Thư mục test: `backend/src/test/java/com/smartpc/modules/product/`. Integrati
 
 | Mã Test Case | Loại | Kịch bản | Dữ liệu đầu vào | Kết quả kỳ vọng |
 | :--- | :--- | :--- | :--- | :--- |
-| **`TC-CAT-01`** | Unit | Dựng cây từ danh sách phẳng | 11 Category (3 nhóm, 8 lá) | 3 root nodes; `PC_CORE` có 4 con, `STORAGE_DEVICES` 1 con, `POWER_COOLING_CASE` 3 con |
+| **`TC-CAT-01`** | Unit | Dựng cây từ danh sách phẳng | 16 Category (4 nhóm, 12 lá) | 4 root nodes; `PC_CORE` 4 con, `STORAGE_DEVICES` 2 con (`SSD_M2`, `SSD_SATA`), `POWER_COOLING_CASE` 3 con, `PERIPHERALS` 3 con |
 | **`TC-CAT-02`** | Unit | Chặn vòng lặp cha-con | A là cha của B; cập nhật cha của A = B | `BusinessException("PROD_CATEGORY_CIRCULAR_REF")` |
 | **`TC-CAT-03`** | Unit | Chặn đổi `category_code` | `UpdateCategoryRequest` với code `CPU` $\rightarrow$ `CPU_X` | `PROD_CATEGORY_CODE_IMMUTABLE` |
 | **`TC-CAT-04`** | Integration | Chặn xóa danh mục còn sản phẩm / còn con / còn luật | `DELETE` danh mục `CPU` (có SP & luật), `PC_CORE` (có con) | `409` lần lượt `PROD_CATEGORY_HAS_PRODUCTS`, `PROD_CATEGORY_HAS_CHILDREN`; luật UC6 không bị xóa |
@@ -1402,6 +1404,7 @@ Thư mục test: `backend/src/test/java/com/smartpc/modules/product/`. Integrati
 | **`TC-PROD-27`** | Integration | Facets Đèn LED trả về đầy đủ 4 nhóm lựa chọn cho KEYBOARD | Gọi `GET /api/v1/products/facets?category=KEYBOARD` | Facet group `led_type` trả về đủ 4 options (`RGB`, `Monochrome`, `Rainbow`, `None`) với count tương ứng |
 | **`TC-PROD-24`** | Frontend / Unit | Thanh phân trang nâng cao (Trang đầu/cuối & Điền trang trực tiếp) | Test điều hướng `AdminProductListPage`: bấm `Trang đầu`, `Trang cuối`; nhập trang hợp lệ `p`, nhập trang âm $< 1$, nhập trang vượt quá `totalPages` | Nút `Trang đầu`/`Trang trước` disabled tại trang 1; `Trang cuối`/`Trang sau` disabled tại trang cuối; nhập số hợp lệ chuyển đến đúng trang; nhập ngoài biên được chặn và đưa về cận $1$ hoặc $totalPages$ an toàn |
 | **`TC-PROD-28`** | Unit | Sinh dải giá động ẩn mốc rỗng & gộp mốc min/max (`ProductService.buildDynamicPriceOptions`) | Tập SP chỉ có giá trong `2-5M` (4 SP) và `5-10M` (2 SP); hoặc chỉ có `2-5M` (1 SP) và `15-25M` (2 SP) | Các mốc `0` SP bị ẩn; mốc đầu `2-5M` đổi thành `Dưới 5 triệu` (`0-5000000`); nếu mốc cuối là `5-10M` thì đổi thành `Trên 5 triệu` (`5000000-999999999`) |
+| **`TC-PROD-29..33`** | Unit / FE | Mở rộng `SSD_SATA` (`V12`, Schema, Search Intent, UI Catalog & Mock) | Xem chi tiết trong Sub-DD `dd-uc5-ssd-sata.md` | Pass toàn bộ test backend + frontend cho `SSD_SATA` |
 
 ---
 

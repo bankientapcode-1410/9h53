@@ -49,7 +49,7 @@ class CategoryServiceTest {
     }
 
     @Test
-    @DisplayName("TC-CAT-01: Dựng cây danh mục phân cấp từ danh sách phẳng (15 categories: 4 nhóm, 11 lá)")
+    @DisplayName("TC-CAT-01: Dựng cây danh mục phân cấp từ danh sách phẳng (16 categories: 4 nhóm, 12 lá)")
     void testBuildHierarchy_Success() {
         // 4 root groups
         Category g1 = Category.builder().categoryId("g1").categoryCode("PC_CORE").categoryName("Linh kiện cốt lõi").build();
@@ -57,13 +57,14 @@ class CategoryServiceTest {
         Category g3 = Category.builder().categoryId("g3").categoryCode("POWER_COOLING_CASE").categoryName("Nguồn, Tản nhiệt & Vỏ máy").build();
         Category g4 = Category.builder().categoryId("g4").categoryCode("PERIPHERALS").categoryName("Màn hình & Thiết bị ngoại vi").build();
 
-        // 11 leaf categories
+        // 12 leaf categories
         Category c1 = Category.builder().categoryId("c1").categoryCode("CPU").categoryName("Bộ vi xử lý (CPU)").parentCategory(g1).build();
         Category c2 = Category.builder().categoryId("c2").categoryCode("MOTHERBOARD").categoryName("Bo mạch chủ (Mainboard)").parentCategory(g1).build();
         Category c3 = Category.builder().categoryId("c3").categoryCode("RAM").categoryName("Bộ nhớ trong (RAM)").parentCategory(g1).build();
         Category c4 = Category.builder().categoryId("c4").categoryCode("GPU").categoryName("Card màn hình (VGA)").parentCategory(g1).build();
 
         Category c5 = Category.builder().categoryId("c5").categoryCode("SSD_M2").categoryName("Ổ cứng SSD M.2 NVMe").parentCategory(g2).build();
+        Category c12 = Category.builder().categoryId("c12").categoryCode("SSD_SATA").categoryName("Ổ cứng SSD SATA 2.5\"").parentCategory(g2).build();
 
         Category c6 = Category.builder().categoryId("c6").categoryCode("PSU").categoryName("Nguồn máy tính (PSU)").parentCategory(g3).build();
         Category c7 = Category.builder().categoryId("c7").categoryCode("CASE").categoryName("Vỏ máy tính (Case)").parentCategory(g3).build();
@@ -73,7 +74,7 @@ class CategoryServiceTest {
         Category c10 = Category.builder().categoryId("c10").categoryCode("KEYBOARD").categoryName("Bàn phím cơ").parentCategory(g4).build();
         Category c11 = Category.builder().categoryId("c11").categoryCode("MOUSE").categoryName("Chuột máy tính").parentCategory(g4).build();
 
-        List<Category> allCategories = List.of(g1, g2, g3, g4, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11);
+        List<Category> allCategories = List.of(g1, g2, g3, g4, c1, c2, c3, c4, c5, c12, c6, c7, c8, c9, c10, c11);
 
         List<CategoryTreeDTO> tree = categoryService.buildHierarchy(allCategories);
 
@@ -84,7 +85,7 @@ class CategoryServiceTest {
         assertEquals(4, root1.getChildren().size(), "PC_CORE phải chứa 4 danh mục con");
 
         CategoryTreeDTO root2 = tree.stream().filter(t -> t.getCategoryCode().equals("STORAGE_DEVICES")).findFirst().orElseThrow();
-        assertEquals(1, root2.getChildren().size(), "STORAGE_DEVICES phải chứa 1 danh mục con");
+        assertEquals(2, root2.getChildren().size(), "STORAGE_DEVICES phải chứa 2 danh mục con (SSD_M2 & SSD_SATA)");
 
         CategoryTreeDTO root3 = tree.stream().filter(t -> t.getCategoryCode().equals("POWER_COOLING_CASE")).findFirst().orElseThrow();
         assertEquals(3, root3.getChildren().size(), "POWER_COOLING_CASE phải chứa 3 danh mục con");

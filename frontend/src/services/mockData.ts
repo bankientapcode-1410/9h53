@@ -55,7 +55,7 @@ export const MOCK_CATEGORY_TREE: CategoryTreeDTO[] = [
     category_id: 'g0000001-0000-0000-0000-000000000002',
     category_code: 'STORAGE_DEVICES',
     category_name: 'Thiết bị lưu trữ',
-    description: 'Ổ cứng SSD NVMe M.2 & SATA',
+    description: 'Ổ cứng SSD M.2 NVMe & SSD SATA 2.5"',
     parent_category_id: null,
     has_schema: false,
     children: [
@@ -64,6 +64,15 @@ export const MOCK_CATEGORY_TREE: CategoryTreeDTO[] = [
         category_code: 'SSD_M2',
         category_name: 'Ổ cứng SSD M.2 NVMe',
         description: 'Tốc độ đọc ghi cực cao chuẩn PCIe 3.0, 4.0, 5.0',
+        parent_category_id: 'g0000001-0000-0000-0000-000000000002',
+        has_schema: true,
+        children: [],
+      },
+      {
+        category_id: 'c0000001-0000-0000-0000-000000000012',
+        category_code: 'SSD_SATA',
+        category_name: 'Ổ cứng SSD SATA 2.5"',
+        description: 'Ổ cứng SSD chuẩn 2.5 inch giao tiếp SATA III 6Gb/s ổn định, tiết kiệm cho máy tính cá nhân',
         parent_category_id: 'g0000001-0000-0000-0000-000000000002',
         has_schema: true,
         children: [],
@@ -206,6 +215,19 @@ export const MOCK_SPECS_SCHEMA: Record<string, SpecMetadataDTO> = {
       { key: 'capacity_gb', label: 'Dung lượng ổ cứng', type: 'INTEGER', required: true, filterable: true, unit: 'GB', minValue: 120 },
       { key: 'read_speed_mbps', label: 'Tốc độ đọc tối đa', type: 'INTEGER', required: false, filterable: false, unit: 'MB/s' },
       { key: 'tdp_w', label: 'Công suất', type: 'NUMBER', required: false, filterable: false, unit: 'W' },
+    ],
+  },
+  SSD_SATA: {
+    category_code: 'SSD_SATA',
+    category_name: 'Ổ cứng SSD SATA 2.5"',
+    has_schema: true,
+    fields: [
+      { key: 'interface_type', label: 'Giao tiếp', type: 'STRING', required: true, filterable: true, allowedValues: ['SATA III 6Gb/s'] },
+      { key: 'form_factor', label: 'Kích thước', type: 'STRING', required: true, filterable: false, allowedValues: ['2.5 inch'] },
+      { key: 'capacity_gb', label: 'Dung lượng', type: 'INTEGER', required: true, filterable: true, unit: 'GB', minValue: 1 },
+      { key: 'read_speed_mbps', label: 'Tốc độ đọc', type: 'INTEGER', required: false, filterable: false, unit: 'MB/s', minValue: 1 },
+      { key: 'write_speed_mbps', label: 'Tốc độ ghi', type: 'INTEGER', required: false, filterable: false, unit: 'MB/s', minValue: 1 },
+      { key: 'tdp_w', label: 'Công suất tiêu thụ', type: 'NUMBER', required: false, filterable: false, unit: 'W', minValue: 0.0001 },
     ],
   },
   PSU: {
@@ -2865,5 +2887,377 @@ export const MOCK_PRODUCTS: AdminProductDTO[] = [
     "version": 0,
     "created_at": "2026-11-04T12:00:00Z",
     "updated_at": "2026-11-04T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000086",
+    "name": "Ổ cứng SSD Kingston A400 240GB 2.5\" SATA III",
+    "brand": "KINGSTON",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng thể rắn Kingston A400 dung lượng 240GB chuẩn 2.5 inch SATA III 6Gb/s, tốc độ đọc tuần tự lên tới 500 MB/s, tối ưu chi phí khởi động Windows và ứng dụng văn phòng cho máy tính cá nhân.",
+    "price": 590000,
+    "stock_quantity": 45,
+    "benchmark_score": 62.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000086.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000086.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 240,
+      "read_speed_mbps": 500,
+      "write_speed_mbps": 350,
+      "tdp_w": 1.5
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000087",
+    "name": "Ổ cứng SSD WD Green 240GB 2.5\" SATA III",
+    "brand": "WD",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng SSD Western Digital Green 240GB kích thước 2.5 inch mỏng 7mm, giao tiếp SATA III 6Gb/s với tốc độ đọc 545 MB/s, tiêu thụ điện năng cực thấp và chống sốc SLC Caching bền bỉ.",
+    "price": 570000,
+    "stock_quantity": 40,
+    "benchmark_score": 63.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000087.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000087.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 240,
+      "read_speed_mbps": 545,
+      "write_speed_mbps": 430,
+      "tdp_w": 1.8
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000088",
+    "name": "Ổ cứng SSD Kingston A400 480GB 2.5\" SATA III",
+    "brand": "KINGSTON",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng SSD Kingston A400 480GB chuẩn 2.5 inch SATA III 6Gb/s, đọc 500 MB/s và ghi 450 MB/s, mang lại không gian thoải mái chứa hệ điều hành, phần mềm đồ họa nhẹ và tài liệu cá nhân.",
+    "price": 890000,
+    "stock_quantity": 38,
+    "benchmark_score": 66.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000088.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000088.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 480,
+      "read_speed_mbps": 500,
+      "write_speed_mbps": 450,
+      "tdp_w": 1.6
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000089",
+    "name": "Ổ cứng SSD Crucial BX500 480GB 2.5\" SATA III",
+    "brand": "CRUCIAL",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng SSD Crucial BX500 480GB sử dụng chip nhớ Micron 3D NAND tin cậy, tốc độ đọc 540 MB/s và ghi 500 MB/s qua cổng SATA III 6Gb/s, dễ dàng nâng cấp tốc độ cho PC cá nhân.",
+    "price": 850000,
+    "stock_quantity": 36,
+    "benchmark_score": 68.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000089.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000089.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 480,
+      "read_speed_mbps": 540,
+      "write_speed_mbps": 500,
+      "tdp_w": 2.0
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000090",
+    "name": "Ổ cứng SSD WD Blue SA510 500GB 2.5\" SATA III",
+    "brand": "WD",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng SSD WD Blue SA510 500GB thiết kế dành riêng cho người dùng sáng tạo nội dung và PC cá nhân, đạt tốc độ đọc tối đa 560 MB/s và ghi 510 MB/s qua giao tiếp SATA III 6Gb/s.",
+    "price": 1150000,
+    "stock_quantity": 32,
+    "benchmark_score": 72.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000090.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000090.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 500,
+      "read_speed_mbps": 560,
+      "write_speed_mbps": 510,
+      "tdp_w": 2.2
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000091",
+    "name": "Ổ cứng SSD Crucial MX500 500GB 2.5\" SATA III",
+    "brand": "CRUCIAL",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng SSD Crucial MX500 500GB tích hợp bộ nhớ đệm DRAM Cache và bảo vệ mất điện đột ngột, đọc 560 MB/s và ghi 510 MB/s, cực kỳ bền bỉ khi làm ổ cài đặt hệ điều hành lẫn lưu game.",
+    "price": 1290000,
+    "stock_quantity": 30,
+    "benchmark_score": 76.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000091.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000091.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 500,
+      "read_speed_mbps": 560,
+      "write_speed_mbps": 510,
+      "tdp_w": 2.5
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000092",
+    "name": "Ổ cứng SSD Samsung 870 EVO 500GB 2.5\" SATA III",
+    "brand": "SAMSUNG",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng SSD Samsung 870 EVO 500GB dẫn đầu phân khúc SATA 2.5 inch với V-NAND thế hệ mới và controller MKX, đạt ngưỡng bão hòa SATA III 560 MB/s đọc, 530 MB/s ghi cùng độ bền 300 TBW.",
+    "price": 1490000,
+    "stock_quantity": 28,
+    "benchmark_score": 80.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000092.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000092.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 500,
+      "read_speed_mbps": 560,
+      "write_speed_mbps": 530,
+      "tdp_w": 2.5
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000093",
+    "name": "Ổ cứng SSD WD Blue SA510 1TB 2.5\" SATA III",
+    "brand": "WD",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng SSD WD Blue SA510 dung lượng lớn 1TB chuẩn 2.5 inch SATA III, tốc độ đọc 560 MB/s và ghi 520 MB/s, giải pháp lưu trữ thư viện ảnh RAW, video và game thay thế hoàn toàn ổ HDD truyền thống.",
+    "price": 1950000,
+    "stock_quantity": 24,
+    "benchmark_score": 75.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000093.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000093.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 1000,
+      "read_speed_mbps": 560,
+      "write_speed_mbps": 520,
+      "tdp_w": 2.5
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000094",
+    "name": "Ổ cứng SSD Crucial MX500 1TB 2.5\" SATA III",
+    "brand": "CRUCIAL",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng SSD Crucial MX500 1TB chuẩn 2.5 inch SATA III có DRAM Cache và mã hóa phần cứng AES 256-bit, đọc 560 MB/s và ghi 510 MB/s, vận hành êm ái và ổn định cho bộ máy làm việc lẫn giải trí.",
+    "price": 2190000,
+    "stock_quantity": 22,
+    "benchmark_score": 79.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000094.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000094.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 1000,
+      "read_speed_mbps": 560,
+      "write_speed_mbps": 510,
+      "tdp_w": 3.0
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000095",
+    "name": "Ổ cứng SSD Samsung 870 EVO 1TB 2.5\" SATA III",
+    "brand": "SAMSUNG",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng SSD Samsung 870 EVO 1TB SATA III trang bị 1GB LPDDR4 DRAM Cache và công nghệ Intelligent TurboWrite, tốc độ đọc 560 MB/s và độ bền lên đến 600 TBW cho nhu cầu sử dụng cường độ cao.",
+    "price": 2590000,
+    "stock_quantity": 20,
+    "benchmark_score": 84.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000095.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000095.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 1000,
+      "read_speed_mbps": 560,
+      "write_speed_mbps": 530,
+      "tdp_w": 3.0
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000096",
+    "name": "Ổ cứng SSD Crucial BX500 2TB 2.5\" SATA III",
+    "brand": "CRUCIAL",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng SSD Crucial BX500 2TB dung lượng lớn chuẩn 2.5 inch SATA III 6Gb/s, đọc 540 MB/s và ghi 500 MB/s, giải pháp mở rộng bộ nhớ im lặng, tốc độ cao gấp nhiều lần HDD cho dàn PC cá nhân.",
+    "price": 3590000,
+    "stock_quantity": 14,
+    "benchmark_score": 74.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000096.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000096.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 2000,
+      "read_speed_mbps": 540,
+      "write_speed_mbps": 500,
+      "tdp_w": 2.8
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
+  },
+  {
+    "product_id": "e0000001-0000-0000-0000-000000000097",
+    "name": "Ổ cứng SSD Samsung 870 QVO 2TB 2.5\" SATA III",
+    "brand": "SAMSUNG",
+    "category": {
+      "category_id": "c0000001-0000-0000-0000-000000000012",
+      "category_code": "SSD_SATA",
+      "category_name": "Ổ cứng SSD SATA 2.5\""
+    },
+    "description": "Ổ cứng SSD Samsung 870 QVO 2TB chuẩn 2.5 inch SATA III tối ưu cho nhu cầu lưu trữ dung lượng khủng trên máy tính cá nhân, đọc 560 MB/s và ghi 530 MB/s với độ bền 720 TBW.",
+    "price": 4290000,
+    "stock_quantity": 12,
+    "benchmark_score": 78.0,
+    "image_url": "/images/products/e0000001-0000-0000-0000-000000000097.svg",
+    "gallery_urls": [
+      "/images/products/e0000001-0000-0000-0000-000000000097.svg"
+    ],
+    "specs": {
+      "interface_type": "SATA III 6Gb/s",
+      "form_factor": "2.5 inch",
+      "capacity_gb": 2000,
+      "read_speed_mbps": 560,
+      "write_speed_mbps": 530,
+      "tdp_w": 3.2
+    },
+    "is_active": true,
+    "sync_status": "SYNCED",
+    "version": 0,
+    "created_at": "2026-11-14T12:00:00Z",
+    "updated_at": "2026-11-14T12:00:00Z"
   }
 ];

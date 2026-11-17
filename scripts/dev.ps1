@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     SmartPC Local Dev & Demo Orchestrator Script (DD-LOCAL-DEV-AUTOMATION)
 .DESCRIPTION
@@ -316,6 +316,20 @@ function Start-BackendService {
     }
 }
 
+function Stop-BackendOnPort {
+    $conns = Get-NetTCPConnection -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
+    if ($conns) {
+        $pids = $conns | Select-Object -ExpandProperty OwningProcess -Unique
+        foreach ($procId in $pids) {
+            if ($procId -gt 4) {
+                try {
+                    Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
+                } catch {}
+            }
+        }
+    }
+}
+
 function Start-FullStackLocal {
     $status = Get-EnvironmentStatus
     if (-not $status.HasJava) {
@@ -328,16 +342,85 @@ function Start-FullStackLocal {
         return
     }
 
-    if (-not $status.BackendRunning) {
-        Write-Host "[INFO] Launching Backend in a separate PowerShell window..." -ForegroundColor Cyan
-        $backendCmd = "Set-Location '$ProjectRoot'; & '$PSCommandPath' -Mode backend"
-        Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-Command", $backendCmd
-        Start-Sleep -Seconds 3
-    } else {
-        Write-Host "[INFO] Backend is already running on port 8080." -ForegroundColor Green
-    }
+    $backendProc = $null
+    $startedBackendHere = $false
+    $logsDir = Join-Path $ProjectRoot "logs"
+    $backendLogPath = Join-Path $logsDir "backend-dev.log"
 
-    Start-FrontendService -OpenBrowserWindow $true
+    try {
+        if (-not $status.BackendRunning) {
+            if (-not $status.MySqlRunning) {
+                Write-Host "[WARN] (ENV-MYSQL-01) MySQL is not listening on port 3306. Attempting to start MySQL80 service..." -ForegroundColor Yellow
+                Start-Service -Name "MySQL80" -ErrorAction SilentlyContinue
+            }
+
+            if ($status.HasMaven) {
+                $backendCmdString = "mvn spring-boot:run"
+            } elseif ($status.HasBackendJar) {
+                $backendCmdString = "`"$($status.JavaExe)`" -jar `"$BackendJar`""
+            } else {
+                Write-Host "[ERROR] (ENV-BE-JAR) Neither Maven nor prebuilt JAR was found." -ForegroundColor Red
+                exit 21
+            }
+
+            if (-not (Test-Path $logsDir)) {
+                New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
+            }
+
+            Write-Host "[INFO] Starting SmartPC Backend in background on http://localhost:8080 (same terminal, log: logs\backend-dev.log)..." -ForegroundColor Cyan
+            $backendProc = Start-Process -FilePath "cmd.exe" `
+                -ArgumentList "/c", "($backendCmdString) > `"$backendLogPath`" 2>&1" `
+                -WorkingDirectory $BackendDir `
+                -WindowStyle Hidden `
+                -PassThru
+            $startedBackendHere = $true
+
+            $printedLines = 0
+            $maxWaitSeconds = 90
+            $deadline = (Get-Date).AddSeconds($maxWaitSeconds)
+
+            while ((Get-Date) -lt $deadline) {
+                if (Test-Path $backendLogPath) {
+                    $lines = @(Get-Content -Path $backendLogPath -ErrorAction SilentlyContinue)
+                    if ($lines.Count -gt $printedLines) {
+                        for ($i = $printedLines; $i -lt $lines.Count; $i++) {
+                            Write-Host "  [BE] $($lines[$i])" -ForegroundColor DarkGray
+                        }
+                        $printedLines = $lines.Count
+                    }
+                }
+
+                if (Test-TcpPort -Port $BackendPort) {
+                    Write-Host "[OK] Backend API (8080) is ready! Ongoing logs -> logs\backend-dev.log" -ForegroundColor Green
+                    break
+                }
+
+                if ($backendProc.HasExited) {
+                    Write-Host "[ERROR] Backend exited unexpectedly (ExitCode: $($backendProc.ExitCode)). Check logs\backend-dev.log" -ForegroundColor Red
+                    exit 22
+                }
+
+                Start-Sleep -Milliseconds 500
+            }
+
+            if (-not (Test-TcpPort -Port $BackendPort)) {
+                Write-Host "[WARN] Backend is still starting after ${maxWaitSeconds}s (check logs\backend-dev.log). Starting Frontend UI now..." -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "[INFO] Backend is already running on port 8080." -ForegroundColor Green
+        }
+
+        Start-FrontendService -OpenBrowserWindow $true
+    } finally {
+        if ($startedBackendHere) {
+            Write-Host ""
+            Write-Host "[INFO] Stopping background Backend process (port $BackendPort)..." -ForegroundColor Yellow
+            if ($null -ne $backendProc -and (-not $backendProc.HasExited)) {
+                & taskkill.exe /PID $backendProc.Id /T /F 2>$null | Out-Null
+            }
+            Stop-BackendOnPort
+        }
+    }
 }
 
 function Start-DockerEnvironment {

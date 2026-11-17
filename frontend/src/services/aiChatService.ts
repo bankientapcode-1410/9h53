@@ -378,21 +378,22 @@ Bạn đang nhắm tới mẫu nào để mình tư vấn bộ nguồn và kích
     };
   }
 
-  // 5. Phân loại theo Ổ cứng SSD
-  if (lower.includes('ssd') || lower.includes('ổ cứng') || lower.includes('dung lượng')) {
+  // 5. Phân loại theo Ổ cứng SSD (M.2 NVMe & SATA 2.5")
+  if (lower.includes('ssd') || lower.includes('ổ cứng') || lower.includes('sata') || lower.includes('dung lượng')) {
     return {
-      reply: `SmartPC đang có sẵn các dòng **Ổ cứng SSD M.2 NVMe PCIe Gen 4.0** tốc độ cao:
+      reply: `SmartPC đang có sẵn đầy đủ cả **SSD M.2 NVMe** siêu tốc và **SSD SATA 2.5"** tối ưu chi phí cho máy tính cá nhân:
 
-* 💾 **Kingston NV2 500GB PCIe Gen 4.0 x4** — **1.090.000 đ** (Tốc độ đọc 3500MB/s)
-* 💾 **Kingston NV2 1TB PCIe Gen 4.0 x4** — **1.690.000 đ** (Dung lượng lớn, giá cực êm)
-* 💾 **Kingston KC3000 1TB PCIe Gen 4.0 x4** — **2.390.000 đ** (Đọc 7000MB/s, có DRAM Cache xịn)
-* 💾 **Samsung 990 PRO 1TB PCIe Gen 4.0 x4** — **2.890.000 đ** (Đỉnh cao tốc độ 7450MB/s, siêu bền)
+* 💾 **Kingston NV2 500GB M.2 NVMe Gen 4** — **1.090.000 đ** (Đọc 3500MB/s, làm ổ cài Windows)
+* 💾 **Samsung 990 PRO 1TB M.2 NVMe Gen 4** — **2.890.000 đ** (Đọc 7450MB/s, gaming & đồ họa nặng)
+* 💿 **Kingston A400 480GB SATA 2.5"** — **890.000 đ** (SATA III 6Gb/s, nâng cấp tiết kiệm)
+* 💿 **Crucial MX500 1TB SATA 2.5"** — **2.190.000 đ** (Có DRAM Cache, siêu bền cho dữ liệu & game)
+* 💿 **Samsung 870 EVO 1TB SATA 2.5"** — **2.590.000 đ** (Đầu bảng phân khúc SATA 2.5")
 
-Khuyên dùng SSD Kingston KC3000 hoặc Samsung 990 Pro nếu bạn thường xuyên render video nặng hoặc load game AAA.`,
+Khuyên dùng **SSD M.2 NVMe** làm ổ chính và **SSD SATA 2.5"** để mở rộng dung lượng êm ái thay cho HDD.`,
       suggestions: [
-        'Nên chọn Kingston NV2 1TB hay KC3000 1TB?',
-        'Mainboard H610 có lắp được SSD Gen 4 không?',
-        'Thêm SSD Samsung 990 PRO vào giỏ',
+        'Nên chọn SSD M.2 NVMe hay SSD SATA 2.5"?',
+        'Mainboard H610 có lắp được thêm SSD SATA 2.5" không?',
+        'Xem các mẫu SSD SATA 1TB giá tốt',
       ],
       is_fallback: true,
     };

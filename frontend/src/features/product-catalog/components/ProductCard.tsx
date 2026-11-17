@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Wrench, Flame, CheckCircle, AlertTriangle } from 'lucide-react';
 import { ProductSummaryDTO } from '../types/product.types';
 import { getProductImageFallback } from '@/utils/productImageFallback';
+import { isBuilderSlotCode } from '@/features/pc-builder/constants/slotConfig';
+import { usePCBuilderStore } from '@/stores/usePCBuilderStore';
 
 interface ProductCardProps {
   product: ProductSummaryDTO;
@@ -10,12 +12,38 @@ interface ProductCardProps {
   onAddToBuilder?: (product: ProductSummaryDTO) => void;
 }
 
+interface CardToastState {
+  tone: 'success' | 'warning';
+  message: string;
+  showBuilderLink?: boolean;
+}
+
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onAddToCart,
   onAddToBuilder,
 }) => {
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastState, setToastState] = useState<CardToastState | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const showToast = (nextToast: CardToastState, durationMs = 3500) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setToastState(nextToast);
+    toastTimerRef.current = setTimeout(() => {
+      setToastState(null);
+      toastTimerRef.current = null;
+    }, durationMs);
+  };
 
   const formatVND = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -32,9 +60,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     if (onAddToCart) {
       onAddToCart(product);
     } else {
-      // Local toast fallback
-      setToastMessage('Đã thêm vào giỏ hàng!');
-      setTimeout(() => setToastMessage(null), 2000);
+      showToast({ tone: 'success', message: 'Đã thêm vào giỏ hàng!' }, 2000);
     }
   };
 
@@ -44,11 +70,35 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
     if (onAddToBuilder) {
       onAddToBuilder(product);
-    } else {
-      // Local toast fallback
-      setToastMessage(`Đã thêm vào cấu hình PC Builder (${product.category_code})!`);
-      setTimeout(() => setToastMessage(null), 2000);
+      return;
     }
+
+    const rawCategory = (product.category_code || '').trim().toUpperCase();
+    if (!isBuilderSlotCode(rawCategory)) {
+      showToast({
+        tone: 'warning',
+        message: `Danh mục "${product.category_name || rawCategory || 'Khác'}" chưa hỗ trợ khe PC Builder.`,
+        showBuilderLink: false,
+      });
+      return;
+    }
+
+    usePCBuilderStore.getState().selectProduct(rawCategory, product);
+    const notice = usePCBuilderStore.getState().slotNotice;
+    if (notice) {
+      showToast({
+        tone: 'warning',
+        message: notice,
+        showBuilderLink: true,
+      });
+      return;
+    }
+
+    showToast({
+      tone: 'success',
+      message: `Đã đưa vào khe ${rawCategory} trong PC Builder!`,
+      showBuilderLink: true,
+    });
   };
 
   // Format individual spec key-value into a clear human-readable label with units
@@ -182,10 +232,36 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <div className="group bg-white rounded-2xl border border-slate-200 hover:border-smart-blue/50 hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden relative">
       {/* Toast Overlay */}
-      {toastMessage && (
-        <div className="absolute top-2 inset-x-2 z-20 bg-smart-navy/95 text-white text-xs font-semibold py-2 px-3 rounded-xl shadow-lg flex items-center justify-center gap-1.5 animate-in fade-in slide-in-from-top-2">
-          <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-          <span>{toastMessage}</span>
+      {toastState && (
+        <div
+          data-testid="product-card-builder-toast"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          className={`absolute top-2 inset-x-2 z-20 text-white text-xs font-semibold py-2 px-3 rounded-xl shadow-lg flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2 ${
+            toastState.tone === 'warning'
+              ? 'bg-amber-900/95 border border-amber-400/50'
+              : 'bg-smart-navy/95'
+          }`}
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            {toastState.tone === 'warning' ? (
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+            ) : (
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+            )}
+            <span className="leading-snug">{toastState.message}</span>
+          </div>
+          {toastState.showBuilderLink && (
+            <Link
+              to="/builder"
+              onClick={(e) => e.stopPropagation()}
+              className="flex-shrink-0 text-[11px] font-black text-sky-300 hover:text-white underline underline-offset-2"
+            >
+              Mở PC Builder
+            </Link>
+          )}
         </div>
       )}
 

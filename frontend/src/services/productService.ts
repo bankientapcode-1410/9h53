@@ -459,6 +459,40 @@ export const productService = {
             options: Object.entries(connCounts).map(([k, count]) => ({ label: k, value: k, count })),
           });
         }
+      } else if (categoryCode.toUpperCase() === 'SSD_SATA' || categoryCode.toUpperCase() === 'SSD_M2') {
+        const ifaceCounts: Record<string, number> = {};
+        const capCounts: Record<string, number> = {};
+        catProducts.forEach((p) => {
+          const iface = p.specs.interface_type;
+          if (iface) ifaceCounts[iface] = (ifaceCounts[iface] || 0) + 1;
+          const cap = p.specs.capacity_gb;
+          if (cap !== undefined && cap !== null) {
+            const key = String(cap);
+            capCounts[key] = (capCounts[key] || 0) + 1;
+          }
+        });
+        if (Object.keys(ifaceCounts).length > 0) {
+          facets.push({
+            code: 'interface_type',
+            label: 'Chuẩn giao tiếp',
+            filter_type: 'CHIP',
+            options: Object.entries(ifaceCounts).map(([k, count]) => ({ label: k, value: k, count })),
+          });
+        }
+        if (Object.keys(capCounts).length > 0) {
+          facets.push({
+            code: 'capacity_gb',
+            label: 'Dung lượng',
+            filter_type: 'CHIP',
+            options: Object.entries(capCounts)
+              .sort(([a], [b]) => Number(a) - Number(b))
+              .map(([k, count]) => {
+                const gb = Number(k);
+                const label = gb >= 1000 && gb % 1000 === 0 ? `${gb / 1000}TB` : `${gb}GB`;
+                return { label, value: k, count };
+              }),
+          });
+        }
       }
 
       // Price options
@@ -523,7 +557,7 @@ const VIETNAMESE_STOP_WORDS = new Set([
   'dàn', 'chiếc', 'cái', 'con', 'em', 'mình', 'tôi', 'bạn', 'giúp', 'pc'
 ]);
 
-function detectExplicitCategories(query: string): string[] {
+export function detectExplicitCategories(query: string): string[] {
   const q = query.toLowerCase();
   const explicit: string[] = [];
 
@@ -543,9 +577,16 @@ function detectExplicitCategories(query: string): string[] {
   if (/\b(main|mainboard|bo mạch chủ|bo mạch|motherboard|h610|b760|b650|z790|x670)\b/i.test(q)) {
     explicit.push('MOTHERBOARD');
   }
-  // SSD (Ổ cứng M.2)
-  if (/\b(ssd|ổ cứng|ổ ssd|m2|m\.2|nvme|lưu trữ)\b/i.test(q)) {
+  // SSD (Ổ cứng M.2 NVMe & SATA 2.5")
+  const hasNvmeKw = /(?:^|[\s,])(m2|m\.2|nvme)(?:$|[\s,])/i.test(q);
+  const hasSataKw = /(?:^|[\s,])(sata|sata\s+iii|2\.5(?:"|\s*inch)?)(?:$|[\s,])/i.test(q);
+  const hasGenericStorageKw = /(?:^|[\s,])(ssd|ổ\s+cứng|ổ\s+ssd|lưu\s+trữ)(?:$|[\s,])/i.test(q);
+  if (hasNvmeKw && !hasSataKw) {
     explicit.push('SSD_M2');
+  } else if (hasSataKw && !hasNvmeKw) {
+    explicit.push('SSD_SATA');
+  } else if (hasNvmeKw || hasSataKw || hasGenericStorageKw) {
+    explicit.push('SSD_M2', 'SSD_SATA');
   }
   // PSU (Nguồn máy tính)
   if (/\b(nguồn|psu|bộ nguồn|công suất nguồn|80 plus|watt)\b/i.test(q)) {
@@ -580,7 +621,7 @@ function applySemanticIntentFilter(
   }
 
   // Model & Brand tokens
-  const tokenRegex = /(12100|12400|13600|7600|7800|6600|3060|4060|4070|h610|b760|b650|nv2|kc3000|990|550bn|cv650|rm750|rm850|nyx|air\s*100|h5|o11|assassin|ak620|aqua|lt720|kraken|asus|msi|intel|amd|corsair|kingston|deepcool|nzxt|thermalright|montech|lian\s*li|xigmatek|samsung)/gi;
+  const tokenRegex = /(12100|12400|13600|7600|7800|6600|3060|4060|4070|h610|b760|b650|nv2|kc3000|990|870|evo|qvo|mx500|bx500|sa510|a400|sata|550bn|cv650|rm750|rm850|nyx|air\s*100|h5|o11|assassin|ak620|aqua|lt720|kraken|asus|msi|intel|amd|corsair|kingston|deepcool|nzxt|thermalright|montech|lian\s*li|xigmatek|samsung|crucial|wd)/gi;
   const queryTokens = (qLower.match(tokenRegex) || []).map((t) => t.toLowerCase());
   const aiTokens = (aiLower.match(tokenRegex) || []).map((t) => t.toLowerCase());
   const allTokens = Array.from(new Set([...queryTokens, ...aiTokens]));

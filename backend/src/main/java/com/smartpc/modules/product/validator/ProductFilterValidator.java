@@ -15,7 +15,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ProductFilterValidator {
 
-    private static final Set<String> ALLOWED_SORTS = Set.of(
+    private static final List<String> ALLOWED_SORTS = List.of(
             "newest",
             "oldest",
             "price_asc",

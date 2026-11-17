@@ -141,36 +141,14 @@ public class ProductSpecifications {
 
                 // Tu dong nhan dien danh muc neu chua chon category cu the
                 if (criteria.getCategory() == null || criteria.getCategory().isBlank()) {
-                    String detectedCat = null;
-                    if (rawSearch.matches(".*\\b(cpu|chip|vi xử lý|bộ vi xử lý)\\b.*")) {
-                        detectedCat = "CPU";
-                    } else if (rawSearch.matches(".*\\b(vga|gpu|card màn hình|card đồ họa|card)\\b.*") || rawSearch.contains("chiến lol")) {
-                        detectedCat = "GPU";
-                    } else if (rawSearch.matches(".*\\b(ram|bộ nhớ trong|thanh ram)\\b.*")) {
-                        detectedCat = "RAM";
-                    } else if (rawSearch.matches(".*\\b(main|mainboard|bo mạch chủ|bo mạch)\\b.*")) {
-                        detectedCat = "MOTHERBOARD";
-                    } else if (rawSearch.matches(".*\\b(ssd|ổ cứng|nvme)\\b.*")) {
-                        detectedCat = "SSD_M2";
-                    } else if (rawSearch.matches(".*\\b(nguồn|psu|bộ nguồn)\\b.*")) {
-                        detectedCat = "PSU";
-                    } else if (rawSearch.matches(".*\\b(case|vỏ case|vỏ máy tính|thùng máy)\\b.*")) {
-                        detectedCat = "CASE";
-                    } else if (rawSearch.matches(".*\\b(tản|tản nhiệt|cooler)\\b.*")) {
-                        detectedCat = "CPU_COOLER";
-                    } else if (rawSearch.matches(".*\\b(màn|màn hình|monitor)\\b.*")) {
-                        detectedCat = "MONITOR";
-                    } else if (rawSearch.matches(".*\\b(chuột|mouse)\\b.*")) {
-                        detectedCat = "MOUSE";
-                    } else if (rawSearch.matches(".*\\b(phím|bàn phím|keyboard)\\b.*")) {
-                        detectedCat = "KEYBOARD";
-                    }
-
-                    if (detectedCat != null) {
+                    List<String> detectedCats = detectCategoryIntent(rawSearch);
+                    if (detectedCats.size() == 1) {
                         predicates.add(cb.equal(
                                 cb.upper(root.get("category").get("categoryCode")),
-                                detectedCat
+                                detectedCats.get(0)
                         ));
+                    } else if (detectedCats.size() > 1) {
+                        predicates.add(cb.upper(root.get("category").get("categoryCode")).in(detectedCats));
                     }
                 }
 
@@ -196,6 +174,64 @@ public class ProductSpecifications {
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    /**
+     * Nhận diện danh mục linh kiện từ chuỗi tìm kiếm thô nhằm định hướng đúng ngữ cảnh lọc.
+     */
+    public static List<String> detectCategoryIntent(String rawSearch) {
+        if (rawSearch == null || rawSearch.isBlank()) {
+            return List.of();
+        }
+        String normalized = rawSearch.trim().toLowerCase();
+
+        if (normalized.matches(".*\\b(cpu|chip|vi xử lý|bộ vi xử lý)\\b.*")) {
+            return List.of("CPU");
+        }
+        if (normalized.matches(".*\\b(vga|gpu|card màn hình|card đồ họa|card)\\b.*") || normalized.contains("chiến lol")) {
+            return List.of("GPU");
+        }
+        if (normalized.matches(".*\\b(ram|bộ nhớ trong|thanh ram)\\b.*")) {
+            return List.of("RAM");
+        }
+        if (normalized.matches(".*\\b(main|mainboard|bo mạch chủ|bo mạch)\\b.*")) {
+            return List.of("MOTHERBOARD");
+        }
+
+        boolean hasNvmeKw = normalized.matches(".*(?:^|[\\s,])(nvme|m2|m\\.2)(?:$|[\\s,]).*");
+        boolean hasSataKw = normalized.matches(".*(?:^|[\\s,])(sata|sata\\s+iii|2\\.5(?:\"|\\s*inch)?)(?:$|[\\s,]).*");
+        boolean hasGenericStorageKw = normalized.matches(".*(?:^|[\\s,])(ssd|ổ\\s+cứng|ổ\\s+ssd|lưu\\s+trữ)(?:$|[\\s,]).*");
+
+        if (hasNvmeKw && !hasSataKw) {
+            return List.of("SSD_M2");
+        }
+        if (hasSataKw && !hasNvmeKw) {
+            return List.of("SSD_SATA");
+        }
+        if (hasNvmeKw || hasSataKw || hasGenericStorageKw) {
+            return List.of("SSD_M2", "SSD_SATA");
+        }
+
+        if (normalized.matches(".*\\b(nguồn|psu|bộ nguồn)\\b.*")) {
+            return List.of("PSU");
+        }
+        if (normalized.matches(".*\\b(case|vỏ case|vỏ máy tính|thùng máy)\\b.*")) {
+            return List.of("CASE");
+        }
+        if (normalized.matches(".*\\b(tản|tản nhiệt|cooler)\\b.*")) {
+            return List.of("CPU_COOLER");
+        }
+        if (normalized.matches(".*(?:^|[\\s,])(màn|màn\\s+hình|monitor)(?:$|[\\s,]).*")) {
+            return List.of("MONITOR");
+        }
+        if (normalized.matches(".*\\b(chuột|mouse)\\b.*")) {
+            return List.of("MOUSE");
+        }
+        if (normalized.matches(".*\\b(phím|bàn phím|keyboard)\\b.*")) {
+            return List.of("KEYBOARD");
+        }
+
+        return List.of();
     }
 
     private static Predicate buildInOrEqualPredicate(Path<String> path, List<String> values, jakarta.persistence.criteria.CriteriaBuilder cb) {

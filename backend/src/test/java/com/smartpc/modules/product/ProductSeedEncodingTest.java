@@ -65,4 +65,25 @@ class ProductSeedEncodingTest {
         // Verify no replacement characters or corrupted words
         assertFalse(content.contains("\uFFFD"), "V7 must not have Unicode replacement characters");
     }
+
+    @Test
+    @DisplayName("TC-PROD-31: V12 migration chuẩn UTF-8 và chứa đủ danh mục SSD_SATA cùng 12 sản phẩm seed")
+    void testV12MigrationFileEncodingAndContent() throws IOException {
+        Path v12Path = Paths.get("src/main/resources/db/migration/V12__add_ssd_sata_category_and_products.sql");
+        if (!Files.exists(v12Path)) {
+            v12Path = Paths.get("backend/src/main/resources/db/migration/V12__add_ssd_sata_category_and_products.sql");
+        }
+        assertTrue(Files.exists(v12Path), "V12 migration file must exist");
+
+        String content = Files.readString(v12Path, StandardCharsets.UTF_8);
+        assertTrue(content.contains("'SSD_SATA'"), "V12 must seed SSD_SATA category");
+        assertTrue(content.contains("Ổ cứng SSD SATA 2.5\""), "V12 must contain SSD_SATA Vietnamese display name");
+        assertTrue(content.contains("Ổ cứng SSD Samsung 870 EVO 1TB 2.5\" SATA III"));
+        assertTrue(content.contains("e0000001-0000-0000-0000-000000000086"));
+        assertTrue(content.contains("e0000001-0000-0000-0000-000000000097"));
+        assertFalse(content.contains("\uFFFD"), "V12 must not contain Unicode replacement characters");
+
+        Pattern corruptedWordPattern = Pattern.compile("[a-zA-Z\\u00C0-\\u1EF9]\\?[a-zA-Z\\u00C0-\\u1EF9]");
+        assertFalse(corruptedWordPattern.matcher(content).find(), "V12 migration must not contain corrupted words with '?'");
+    }
 }
